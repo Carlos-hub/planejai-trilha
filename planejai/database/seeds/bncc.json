@@ -1,0 +1,7 @@
+[
+  { "code": "EF06MA01", "disciplina": "Matemática", "ano": "6º ano", "descricao": "Comparar, ordenar, ler e escrever números naturais e racionais na forma decimal." },
+  { "code": "EF06MA02", "disciplina": "Matemática", "ano": "6º ano", "descricao": "Reconhecer o sistema de numeração decimal e o valor posicional dos algarismos." },
+  { "code": "EF06CI01", "disciplina": "Ciências", "ano": "6º ano", "descricao": "Classificar materiais em naturais e sintéticos quanto à origem." },
+  { "code": "EF06LP01", "disciplina": "Língua Portuguesa", "ano": "6º ano", "descricao": "Reconhecer a impossibilidade de uma neutralidade absoluta no relato de fatos." },
+  { "code": "EF07HI01", "disciplina": "História", "ano": "7º ano", "descricao": "Explicar o significado de 'modernidade' e suas lógicas de inclusão e exclusão." }
+]
