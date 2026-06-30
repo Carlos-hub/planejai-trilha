@@ -17,10 +17,11 @@ Uma engine que recebe `{disciplina, ano/série, habilidade BNCC, duração}` e d
 
 ## Stack
 
-- **Laravel** monólito modular + **PostgreSQL**.
-- **Filament** — painel do professor (auth própria, CRUD, dashboard).
+- **Docker** (Laravel Sail) — toda a stack roda em containers; nada instalado no host.
+- **Laravel 13** (última versão) + **PHP 8.4** + **PostgreSQL**, monólito modular.
+- **Filament 4** — painel do professor (auth própria, CRUD, dashboard).
 - **Blade** — páginas públicas do aluno.
-- **Anthropic PHP SDK** (`anthropic-ai/sdk`), modelo `claude-opus-4-8`, structured outputs.
+- **IA agnóstica a marca:** interface `LessonGenerator` + adapter **Prism** (`prism-php/prism`), que suporta Anthropic, OpenAI, Gemini, Ollama e outros. Provider e modelo via env (`LLM_PROVIDER`, `LLM_MODEL`); default Anthropic `claude-opus-4-8`. Structured output via schema do Prism. O domínio depende só da interface — trocar de IA é mudança de config.
 - BNCC carregada como seed (JSON estático), sem fonte externa em runtime.
 
 ## Arquitetura
@@ -54,9 +55,10 @@ Export: PDF leve + link wa.me (WhatsApp)
 
 | Unidade | Responsabilidade | Depende de |
 |---|---|---|
-| `AiService` | `generateLesson(input): LessonData` — chama `claude-opus-4-8`, structured output JSON (plano+atividade+trilha+quiz) | Anthropic SDK |
+| `LessonGenerator` (interface) | `generate(skill, duracao): LessonData` — contrato do domínio, sem marca de IA | — |
+| `PrismLessonGenerator` (adapter) | Implementa a interface via Prism, structured output JSON (plano+atividade+trilha+quiz); provider/modelo de config | Prism |
 | `BnccSeeder` | Carrega habilidades BNCC de JSON estático | — |
-| Planning (Filament) | CRUD plano de aula, botão publicar, dashboard de turma | AiService, models |
+| Planning (Filament) | CRUD plano de aula, botão publicar, dashboard de turma | LessonGenerator, models |
 | Learning (Blade) | Página de trilha pública por código, quiz, gamificação, export | models |
 
 ## Modelo de dados
@@ -76,18 +78,29 @@ attempt_answers                student_attempt_id, quiz_question_id, escolhida, 
 
 Sem tabela de aluno — acesso por código + nome (login simplificado, permitido pelas regras do hackathon).
 
-## Contrato AiService
+## Contrato de IA (agnóstico a marca)
+
+Domínio depende da interface, não de um SDK específico:
 
 ```php
-$client->messages->create(
-  model: 'claude-opus-4-8',
-  max_tokens: 8000,
-  outputConfig: ['format' => ['type' => 'json_schema', 'schema' => $schema]],
-  messages: [['role' => 'user', 'content' => $prompt]],
-);
+interface LessonGenerator {
+    public function generate(BnccSkill $skill, int $duracaoMin): LessonData;
+}
 ```
 
-`$schema` força o JSON de saída:
+Adapter Prism (única classe que conhece a IA), provider/modelo de `config/llm.php`:
+
+```php
+$response = Prism::structured()
+    ->using(config('llm.provider'), config('llm.model'))  // anthropic | openai | gemini | ollama ...
+    ->withSchema($schema)
+    ->withPrompt($prompt)
+    ->asStructured();
+
+return LessonData::fromArray($response->structured);
+```
+
+Trocar de IA = mudar `LLM_PROVIDER`/`LLM_MODEL` no env. O JSON de saída forçado pelo schema:
 
 ```json
 {
@@ -100,12 +113,13 @@ $client->messages->create(
 }
 ```
 
-Structured outputs garante parse confiável. Assistant prefill foi removido no Opus 4.8 (retorna 400) — usar `output_config.format`, não prefill.
+Structured output do Prism garante parse confiável, independente do provider.
 
 ## Tratamento de erro e testes
 
-- IA falha/timeout → `lesson_plans.status = 'falha'`, professor re-tenta. Resposta em ~8k tokens fica abaixo do timeout do SDK; streaming não necessário.
-- Testes unit: `AiService` com client Anthropic mockado (fixture JSON).
+- IA falha/timeout → `lesson_plans.status = 'falha'`, professor re-tenta.
+- Testes de domínio mockam a interface `LessonGenerator` (rápido, sem rede, sem marca).
+- Mapeamento `LessonData::fromArray` testado com fixture JSON.
 - Teste feature: publicar trilha → acessar por código → submeter quiz → verificar pontos corretos.
 
 ## Escopo do MVP

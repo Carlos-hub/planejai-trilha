@@ -4,15 +4,18 @@
 
 **Goal:** Construir MVP de planejador de aulas BNCC (professor) que deriva trilhas de estudo do aluno (acesso por código, quiz autocorrigido, gamificação) a partir de uma única geração via Anthropic API.
 
-**Architecture:** Laravel monólito modular. Filament para o painel do professor (auth, CRUD, ação de gerar, dashboard). Blade para páginas públicas do aluno (trilha por código + quiz). Um `AiService` encapsula o Anthropic PHP SDK e é o único ponto de IA. BNCC carregada como seed JSON.
+**Architecture:** Laravel monólito modular. Filament para o painel do professor (auth, CRUD, ação de gerar, dashboard). Blade para páginas públicas do aluno (trilha por código + quiz). A IA é agnóstica a marca: o domínio depende da interface `LessonGenerator`, e um adapter Prism (provider/modelo via config) é o único ponto que conhece a IA. BNCC carregada como seed JSON.
 
-**Tech Stack:** Laravel 11, PHP 8.2+, PostgreSQL, Filament 3, Blade, Pest (testes), `anthropic-ai/sdk`, `barryvdh/laravel-dompdf` (export).
+**Tech Stack:** Docker (Laravel Sail), Laravel 13 (última versão), PHP 8.4 (última estável), PostgreSQL, Filament 4, Blade, Pest 4 (testes), `prism-php/prism` (IA agnóstica a marca), `barryvdh/laravel-dompdf` (export).
 
 ## Global Constraints
 
-- Modelo Anthropic: `claude-opus-4-8` (exato, sem sufixo de data).
-- Chamada de IA usa structured output (`outputConfig.format` com `json_schema`) — **nunca** assistant prefill (retorna 400 no Opus 4.8).
-- API key da Anthropic via env `ANTHROPIC_API_KEY`, nunca hardcoded.
+- **Docker sempre:** tudo roda em containers via Laravel Sail. PHP, Composer, Postgres e a app vivem no Docker — nada instalado direto no host. Banco = serviço `pgsql` do Sail.
+- **Todos os comandos** `php`/`artisan`/`composer`/`test`/`pest` rodam via Sail. Crie o alias na sessão: `alias sail='./vendor/bin/sail'`. Nos steps abaixo, `sail artisan ...` ≡ `./vendor/bin/sail artisan ...`. Onde um step exibir `php artisan ...` ou `composer ...` sem prefixo, rode com `sail` na frente.
+- Versões: usar a **última versão estável** de Laravel (13.x) e PHP (8.4). Não fixar versões antigas. O scaffold via `laravel.build` já traz a última.
+- **IA agnóstica a marca:** o domínio depende da interface `App\Contracts\LessonGenerator`, nunca de um SDK de IA específico. A única classe que conhece a IA é o adapter Prism. Trocar de provider (Anthropic, OpenAI, Gemini, Ollama, ...) é mudar env `LLM_PROVIDER`/`LLM_MODEL` — sem tocar no domínio.
+- Default: `LLM_PROVIDER=anthropic`, `LLM_MODEL=claude-opus-4-8`. Geração usa structured output (schema do Prism).
+- Chaves de API dos providers via env (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.), nunca hardcoded.
 - Acesso do aluno sem login: código curto da trilha + nome digitado. Sem tabela de aluno.
 - BNCC vem de seed JSON estático (`database/seeds/bncc.json`), sem chamada externa em runtime.
 - Todo teste que toca a Anthropic usa client mockado — nenhum teste faz chamada real à API.
@@ -20,84 +23,98 @@
 
 ---
 
-### Task 1: Scaffold do projeto Laravel + dependências
+### Task 1: Scaffold do projeto Laravel via Docker (Sail) + dependências
 
 **Files:**
-- Create: app Laravel completo na raiz do repo
+- Create: app Laravel completo na raiz do repo + `docker-compose.yml` (Sail)
 - Modify: `.env.example`, `config/services.php`
 - Create: `composer.json` (via installer)
 
 **Interfaces:**
-- Produces: app Laravel rodável; `config('services.anthropic.key')` e `config('services.anthropic.model')` disponíveis.
+- Produces: app Laravel rodável em Docker via Sail; `config('services.anthropic.key')` e `config('services.anthropic.model')` disponíveis.
 
-- [ ] **Step 1: Instalar Laravel na raiz**
+Pré-requisito: Docker instalado e rodando no host (`docker --version`). Nada de PHP/Composer no host — o scaffold usa containers.
 
-O diretório já contém `docs/` e `spec/`. Instalar Laravel em pasta temporária e mover, para não sobrescrever.
+- [ ] **Step 1: Scaffold via Docker (sem PHP no host)**
+
+O diretório já contém `docs/`, `spec/` e `.git/`. Usar o build oficial do Laravel via Docker, que cria a app com Sail + Postgres já configurados, em subpasta, e depois mesclar na raiz sem sobrescrever.
 
 ```bash
 cd /home/carlos/programming/FIAP/Hackathon
-composer create-project laravel/laravel _laravel_tmp
-# mover conteúdo (incluindo ocultos) para a raiz, sem sobrescrever docs/ spec/ .git/
+curl -s "https://laravel.build/planejai?with=pgsql" | bash
+# mesclar conteúdo (incluindo ocultos) na raiz, sem sobrescrever docs/ spec/ .git/
 shopt -s dotglob
-cp -rn _laravel_tmp/* .
-rm -rf _laravel_tmp
+cp -rn planejai/* .
+rm -rf planejai
 shopt -u dotglob
 ```
 
-- [ ] **Step 2: Verificar que a app sobe**
-
-Run: `php artisan --version`
-Expected: imprime `Laravel Framework 11.x` (ou superior).
-
-- [ ] **Step 3: Instalar dependências do projeto**
+- [ ] **Step 2: Subir os containers e criar o alias**
 
 ```bash
-composer require anthropic-ai/sdk barryvdh/laravel-dompdf
-composer require --dev pestphp/pest pestphp/pest-plugin-laravel
-php artisan pest:install
+alias sail='./vendor/bin/sail'
+sail up -d
 ```
 
-- [ ] **Step 4: Configurar Postgres e Anthropic no env**
+Run: `sail artisan --version`
+Expected: imprime `Laravel Framework 13.x`. Confirme o PHP do container: `sail php -v` ≥ 8.4.
 
-Editar `.env` (e replicar chaves em `.env.example` sem valores secretos):
+- [ ] **Step 3: Instalar dependências do projeto (no container)**
+
+```bash
+sail composer require prism-php/prism barryvdh/laravel-dompdf
+sail composer require --dev pestphp/pest pestphp/pest-plugin-laravel
+sail artisan pest:install
+```
+
+Publicar config do Prism (define providers/chaves): `sail artisan vendor:publish --tag=prism-config` (confirme a tag na doc do Prism instalado).
+
+- [ ] **Step 4: Configurar Postgres (Sail) e Anthropic no env**
+
+Editar `.env` (e replicar as chaves em `.env.example` sem valores secretos). `DB_HOST=pgsql` é o nome do serviço Sail:
 
 ```dotenv
 DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
+DB_HOST=pgsql
 DB_PORT=5432
 DB_DATABASE=planejai
-DB_USERNAME=postgres
-DB_PASSWORD=
+DB_USERNAME=sail
+DB_PASSWORD=password
 
+LLM_PROVIDER=anthropic
+LLM_MODEL=claude-opus-4-8
 ANTHROPIC_API_KEY=
-ANTHROPIC_MODEL=claude-opus-4-8
+# Para usar outra IA, troque LLM_PROVIDER/LLM_MODEL e preencha a chave do provider:
+# OPENAI_API_KEY=
+# GEMINI_API_KEY=
 ```
 
-- [ ] **Step 5: Adicionar config de serviço Anthropic**
-
-Em `config/services.php`, adicionar ao array retornado:
+- [ ] **Step 5: Criar config/llm.php**
 
 ```php
-'anthropic' => [
-    'key' => env('ANTHROPIC_API_KEY'),
-    'model' => env('ANTHROPIC_MODEL', 'claude-opus-4-8'),
-],
+<?php
+// config/llm.php
+return [
+    'provider' => env('LLM_PROVIDER', 'anthropic'),
+    'model' => env('LLM_MODEL', 'claude-opus-4-8'),
+];
 ```
 
-- [ ] **Step 6: Criar o banco e rodar migrations base**
+> As chaves de cada provider ficam no config do Prism (publicado no Step 3), lidas das envs padrão (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, ...).
+
+- [ ] **Step 6: Rodar migrations base no container**
 
 ```bash
-createdb planejai 2>/dev/null || true
-php artisan migrate
+sail artisan migrate
 ```
 
-Expected: tabelas default do Laravel criadas sem erro.
+Expected: tabelas default do Laravel criadas no Postgres do Sail sem erro.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add -A
-git commit -m "chore: scaffold Laravel app with Anthropic SDK and Pest"
+git commit -m "chore: scaffold Laravel app via Docker/Sail with Anthropic SDK and Pest"
 ```
 
 ---
@@ -488,19 +505,21 @@ git commit -m "feat: domain migrations and Eloquent models"
 
 ---
 
-### Task 4: AiService com structured output (client mockado)
+### Task 4: IA agnóstica — interface `LessonGenerator` + DTO + adapter Prism
 
 **Files:**
-- Create: `app/Services/AiService.php`
+- Create: `app/Contracts/LessonGenerator.php` (interface)
 - Create: `app/Services/LessonData.php` (DTO)
-- Test: `tests/Unit/AiServiceTest.php`
+- Create: `app/Services/PrismLessonGenerator.php` (adapter — única classe que conhece a IA)
+- Test: `tests/Unit/LessonDataTest.php`
 - Create: `tests/fixtures/lesson_response.json`
 
 **Interfaces:**
-- Produces: `AiService::__construct(\Anthropic\Client $client, string $model)`. Método `generateLesson(BnccSkill $skill, int $duracaoMin): LessonData`.
-- `LessonData` propriedades públicas: `array $plano` (`objetivos`,`metodologia`,`recursos`,`avaliacao` strings), `string $atividade`, `array $topicos` (cada `['titulo','resumo']`), `array $questoes` (cada `['enunciado','opcoes'=>[],'correta'=>int]`).
+- Produces: `interface LessonGenerator { public function generate(BnccSkill $skill, int $duracaoMin): LessonData; }`
+- `LessonData` propriedades públicas: `array $plano` (`objetivos`,`metodologia`,`recursos`,`avaliacao` strings), `string $atividade`, `array $topicos` (cada `['titulo','resumo']`), `array $questoes` (cada `['enunciado','opcoes'=>[],'correta'=>int]`). Método estático `LessonData::fromArray(array): self`.
+- `PrismLessonGenerator implements LessonGenerator`, construtor `(string $provider, string $model)`.
 
-> Nota: o construtor recebe o client por injeção para permitir mock. O binding real é registrado em Task 5.
+> Estratégia de teste: o domínio (Task 6) mocka a interface `LessonGenerator`. Aqui testamos só o mapeamento `LessonData::fromArray` com fixture — lógica nossa, sem rede, sem marca. O adapter Prism é glue fino, isolado numa classe; sua API externa é confirmada na doc do Prism instalado.
 
 - [ ] **Step 1: Criar a fixture de resposta**
 
@@ -520,46 +539,50 @@ git commit -m "feat: domain migrations and Eloquent models"
 }
 ```
 
-- [ ] **Step 2: Escrever o teste falhando**
+- [ ] **Step 2: Escrever o teste falhando (mapeamento do DTO)**
 
 ```php
 <?php
-// tests/Unit/AiServiceTest.php
-use App\Models\BnccSkill;
-use App\Services\AiService;
+// tests/Unit/LessonDataTest.php
 use App\Services\LessonData;
 
-test('generateLesson parseia structured output em LessonData', function () {
-    $payload = file_get_contents(base_path('tests/fixtures/lesson_response.json'));
+test('LessonData::fromArray mapeia o JSON da IA', function () {
+    $raw = json_decode(file_get_contents(base_path('tests/fixtures/lesson_response.json')), true);
 
-    // bloco de texto que a API retorna quando output_config.format é json_schema
-    $textBlock = (object) ['type' => 'text', 'text' => $payload];
-    $message = (object) ['content' => [$textBlock]];
-
-    $messages = Mockery::mock();
-    $messages->shouldReceive('create')->once()->andReturn($message);
-    $client = Mockery::mock(\Anthropic\Client::class);
-    $client->messages = $messages;
-
-    $skill = new BnccSkill(['code' => 'EF06MA01', 'disciplina' => 'Matemática', 'ano' => '6º ano', 'descricao' => 'decimais']);
-
-    $service = new AiService($client, 'claude-opus-4-8');
-    $data = $service->generateLesson($skill, 50);
+    $data = LessonData::fromArray($raw);
 
     expect($data)->toBeInstanceOf(LessonData::class)
         ->and($data->plano['objetivos'])->toBe('Compreender números racionais decimais.')
         ->and($data->atividade)->toContain('5 exercícios')
         ->and($data->topicos)->toHaveCount(2)
-        ->and($data->questoes[0]['correta'])->toBe(0);
+        ->and($data->topicos[0]['titulo'])->toBe('O que é número decimal')
+        ->and($data->questoes[0]['correta'])->toBe(0)
+        ->and($data->questoes[0]['opcoes'])->toBe(['0,5', '0,45']);
 });
 ```
 
 - [ ] **Step 3: Rodar o teste (deve falhar)**
 
-Run: `php artisan test --filter=AiServiceTest`
-Expected: FAIL — `AiService` / `LessonData` não existem.
+Run: `sail artisan test --filter=LessonDataTest`
+Expected: FAIL — `LessonData` não existe.
 
-- [ ] **Step 4: Criar o DTO LessonData**
+- [ ] **Step 4: Criar a interface**
+
+```php
+<?php
+// app/Contracts/LessonGenerator.php
+namespace App\Contracts;
+
+use App\Models\BnccSkill;
+use App\Services\LessonData;
+
+interface LessonGenerator
+{
+    public function generate(BnccSkill $skill, int $duracaoMin): LessonData;
+}
+```
+
+- [ ] **Step 5: Criar o DTO LessonData**
 
 ```php
 <?php
@@ -587,43 +610,44 @@ class LessonData
 }
 ```
 
-- [ ] **Step 5: Criar o AiService**
+- [ ] **Step 6: Rodar o teste (deve passar)**
+
+Run: `sail artisan test --filter=LessonDataTest`
+Expected: PASS.
+
+- [ ] **Step 7: Criar o adapter Prism**
+
+Adapter agnóstico: `provider` e `model` vêm de config; trocar de IA não toca esta lógica, só o env. O schema é declarado com as classes de schema do Prism.
 
 ```php
 <?php
-// app/Services/AiService.php
+// app/Services/PrismLessonGenerator.php
 namespace App\Services;
 
+use App\Contracts\LessonGenerator;
 use App\Models\BnccSkill;
+use Prism\Prism\Prism;
+use Prism\Prism\Schema\ArraySchema;
+use Prism\Prism\Schema\IntegerSchema;
+use Prism\Prism\Schema\ObjectSchema;
+use Prism\Prism\Schema\StringSchema;
 
-class AiService
+class PrismLessonGenerator implements LessonGenerator
 {
     public function __construct(
-        private \Anthropic\Client $client,
+        private string $provider,
         private string $model,
     ) {}
 
-    public function generateLesson(BnccSkill $skill, int $duracaoMin): LessonData
+    public function generate(BnccSkill $skill, int $duracaoMin): LessonData
     {
-        $prompt = $this->buildPrompt($skill, $duracaoMin);
+        $response = Prism::structured()
+            ->using($this->provider, $this->model)
+            ->withSchema($this->schema())
+            ->withPrompt($this->buildPrompt($skill, $duracaoMin))
+            ->asStructured();
 
-        $message = $this->client->messages->create(
-            model: $this->model,
-            maxTokens: 8000,
-            outputConfig: ['format' => ['type' => 'json_schema', 'schema' => $this->schema()]],
-            messages: [['role' => 'user', 'content' => $prompt]],
-        );
-
-        $text = '';
-        foreach ($message->content as $block) {
-            if (($block->type ?? null) === 'text') {
-                $text = $block->text;
-                break;
-            }
-        }
-
-        $data = json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        return LessonData::fromArray($data);
+        return LessonData::fromArray($response->structured);
     }
 
     private function buildPrompt(BnccSkill $skill, int $duracaoMin): string
@@ -634,107 +658,75 @@ class AiService
             . "Ano/série: {$skill->ano}\n"
             . "Habilidade BNCC: {$skill->code} — {$skill->descricao}\n"
             . "Duração da aula: {$duracaoMin} minutos\n\n"
-            . "Responda APENAS no formato JSON definido pelo schema. "
             . "A trilha deve ter 2 a 4 tópicos curtos e um quiz de 3 a 5 questões "
-            . "de múltipla escolha (índice da opção correta em 'correta').";
+            . "de múltipla escolha (índice 0-based da opção correta em 'correta').";
     }
 
-    private function schema(): array
+    private function schema(): ObjectSchema
     {
-        return [
-            'type' => 'object',
-            'additionalProperties' => false,
-            'required' => ['plano', 'atividade', 'trilha'],
-            'properties' => [
-                'plano' => [
-                    'type' => 'object',
-                    'additionalProperties' => false,
-                    'required' => ['objetivos', 'metodologia', 'recursos', 'avaliacao'],
-                    'properties' => [
-                        'objetivos' => ['type' => 'string'],
-                        'metodologia' => ['type' => 'string'],
-                        'recursos' => ['type' => 'string'],
-                        'avaliacao' => ['type' => 'string'],
-                    ],
-                ],
-                'atividade' => ['type' => 'string'],
-                'trilha' => [
-                    'type' => 'object',
-                    'additionalProperties' => false,
-                    'required' => ['topicos', 'quiz'],
-                    'properties' => [
-                        'topicos' => [
-                            'type' => 'array',
-                            'items' => [
-                                'type' => 'object',
-                                'additionalProperties' => false,
-                                'required' => ['titulo', 'resumo'],
-                                'properties' => [
-                                    'titulo' => ['type' => 'string'],
-                                    'resumo' => ['type' => 'string'],
-                                ],
-                            ],
-                        ],
-                        'quiz' => [
-                            'type' => 'object',
-                            'additionalProperties' => false,
-                            'required' => ['questoes'],
-                            'properties' => [
-                                'questoes' => [
-                                    'type' => 'array',
-                                    'items' => [
-                                        'type' => 'object',
-                                        'additionalProperties' => false,
-                                        'required' => ['enunciado', 'opcoes', 'correta'],
-                                        'properties' => [
-                                            'enunciado' => ['type' => 'string'],
-                                            'opcoes' => ['type' => 'array', 'items' => ['type' => 'string']],
-                                            'correta' => ['type' => 'integer'],
-                                        ],
-                                    ],
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
+        $plano = new ObjectSchema('plano', 'Plano de aula', [
+            new StringSchema('objetivos', 'Objetivos da aula'),
+            new StringSchema('metodologia', 'Metodologia'),
+            new StringSchema('recursos', 'Recursos necessários'),
+            new StringSchema('avaliacao', 'Forma de avaliação'),
+        ], ['objetivos', 'metodologia', 'recursos', 'avaliacao']);
+
+        $topico = new ObjectSchema('topico', 'Tópico da trilha', [
+            new StringSchema('titulo', 'Título do tópico'),
+            new StringSchema('resumo', 'Resumo curto'),
+        ], ['titulo', 'resumo']);
+
+        $questao = new ObjectSchema('questao', 'Questão do quiz', [
+            new StringSchema('enunciado', 'Enunciado'),
+            new ArraySchema('opcoes', 'Opções de resposta', new StringSchema('opcao', 'Opção')),
+            new IntegerSchema('correta', 'Índice 0-based da opção correta'),
+        ], ['enunciado', 'opcoes', 'correta']);
+
+        $quiz = new ObjectSchema('quiz', 'Quiz da trilha', [
+            new ArraySchema('questoes', 'Questões', $questao),
+        ], ['questoes']);
+
+        $trilha = new ObjectSchema('trilha', 'Trilha do aluno', [
+            new ArraySchema('topicos', 'Tópicos', $topico),
+            $quiz,
+        ], ['topicos', 'quiz']);
+
+        return new ObjectSchema('lesson', 'Plano de aula + trilha', [
+            $plano,
+            new StringSchema('atividade', 'Atividade/quiz da aula'),
+            $trilha,
+        ], ['plano', 'atividade', 'trilha']);
     }
 }
 ```
 
-> Nota: se a assinatura real de `messages->create` no SDK divergir (ex.: nome da chave nested), ajuste apenas a chamada — o teste mocka `create` e não valida argumentos, então o contrato do DTO permanece. Confirme a forma de `outputConfig` no README PHP do SDK instalado antes de rodar contra a API real.
+> Nota ao implementador: confirme na doc do Prism instalado (a) os namespaces das classes `Schema\*`, (b) a assinatura de `ObjectSchema`/`ArraySchema`, e (c) que `Prism::structured()->...->asStructured()->structured` devolve o array decodificado. Se algo divergir, ajuste **somente** esta classe — interface, DTO e domínio não mudam. `$response->structured` deve bater com a estrutura da fixture (`plano`/`atividade`/`trilha`).
 
-- [ ] **Step 6: Rodar o teste (deve passar)**
-
-Run: `php artisan test --filter=AiServiceTest`
-Expected: PASS.
-
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: AiService with structured output and LessonData DTO"
+git commit -m "feat: brand-agnostic LessonGenerator interface, DTO, and Prism adapter"
 ```
 
 ---
 
-### Task 5: Filament + auth do professor + binding do AiService
+### Task 5: Filament + auth do professor + binding do LessonGenerator
 
 **Files:**
 - Modify: `app/Providers/AppServiceProvider.php`
 - Create: painel Filament + usuário admin
-- Test: `tests/Feature/AiServiceBindingTest.php`
+- Test: `tests/Feature/LessonGeneratorBindingTest.php`
 
 **Interfaces:**
-- Consumes: `AiService` (Task 4).
-- Produces: `app(AiService::class)` resolvível com client real configurado a partir de `config('services.anthropic')`. Painel Filament acessível em `/admin` com login.
+- Consumes: `LessonGenerator` interface + `PrismLessonGenerator` (Task 4).
+- Produces: `app(LessonGenerator::class)` resolve para `PrismLessonGenerator` configurado via `config('llm.*')`. Painel Filament acessível em `/admin` com login.
 
 - [ ] **Step 1: Instalar Filament**
 
 ```bash
-composer require filament/filament:"^3.2"
-php artisan filament:install --panels
+sail composer require filament/filament:"^4.0"
+sail artisan filament:install --panels
 ```
 
 Aceite o painel padrão `admin`.
@@ -751,49 +743,53 @@ Informe nome, email e senha quando solicitado (estes são as credenciais de demo
 
 ```php
 <?php
-// tests/Feature/AiServiceBindingTest.php
-use App\Services\AiService;
+// tests/Feature/LessonGeneratorBindingTest.php
+use App\Contracts\LessonGenerator;
+use App\Services\PrismLessonGenerator;
 
-test('AiService é resolvível pelo container', function () {
-    config()->set('services.anthropic.key', 'sk-test');
-    config()->set('services.anthropic.model', 'claude-opus-4-8');
+test('LessonGenerator resolve para o adapter configurado', function () {
+    config()->set('llm.provider', 'anthropic');
+    config()->set('llm.model', 'claude-opus-4-8');
 
-    $service = app(AiService::class);
+    $service = app(LessonGenerator::class);
 
-    expect($service)->toBeInstanceOf(AiService::class);
+    expect($service)->toBeInstanceOf(PrismLessonGenerator::class);
 });
 ```
 
 - [ ] **Step 4: Rodar o teste (deve falhar)**
 
-Run: `php artisan test --filter=AiServiceBindingTest`
-Expected: FAIL — container não sabe construir `AiService` (precisa do client e do model).
+Run: `sail artisan test --filter=LessonGeneratorBindingTest`
+Expected: FAIL — container não sabe resolver a interface `LessonGenerator`.
 
 - [ ] **Step 5: Registrar o binding**
 
 Em `app/Providers/AppServiceProvider.php`, método `register()`:
 
 ```php
-use App\Services\AiService;
+use App\Contracts\LessonGenerator;
+use App\Services\PrismLessonGenerator;
 
-$this->app->singleton(AiService::class, function ($app) {
-    $client = \Anthropic::client(config('services.anthropic.key'));
-    return new AiService($client, config('services.anthropic.model'));
+$this->app->bind(LessonGenerator::class, function ($app) {
+    return new PrismLessonGenerator(
+        provider: config('llm.provider'),
+        model: config('llm.model'),
+    );
 });
 ```
 
-> Nota: confirme o factory real do SDK PHP. Conforme o README do `anthropic-ai/sdk`, o client é `new \Anthropic\Client(apiKey: ...)`. Se a facade `\Anthropic::client()` não existir na versão instalada, use `new \Anthropic\Client(apiKey: config('services.anthropic.key'))`.
+> O binding lê só de `config('llm.*')` — trocar de IA é mudar env, não código. Nenhuma referência a marca específica aqui.
 
 - [ ] **Step 6: Rodar o teste (deve passar)**
 
-Run: `php artisan test --filter=AiServiceBindingTest`
+Run: `sail artisan test --filter=LessonGeneratorBindingTest`
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add -A
-git commit -m "feat: Filament panel, professor auth, AiService container binding"
+git commit -m "feat: Filament panel, professor auth, LessonGenerator binding"
 ```
 
 ---
@@ -806,7 +802,7 @@ git commit -m "feat: Filament panel, professor auth, AiService container binding
 - Test: `tests/Feature/GenerateLessonActionTest.php`
 
 **Interfaces:**
-- Consumes: `AiService::generateLesson` (Task 4), models (Task 3).
+- Consumes: `LessonGenerator::generate` (Task 4), models (Task 3).
 - Produces: `GenerateLessonAction::execute(LessonPlan $plan): void` — chama IA, popula campos do plano, cria `StudyTrail` (com código), `TrailTopic`s, `Quiz` + `QuizQuestion`s, marca `status='gerado'`. Em exceção, `status='falha'`.
 - Código da trilha: `StudyTrail::gerarCodigo(): string` formato `TR-XXXX` (4 chars alfanuméricos maiúsculos, único).
 
@@ -816,8 +812,9 @@ git commit -m "feat: Filament panel, professor auth, AiService container binding
 <?php
 // tests/Feature/GenerateLessonActionTest.php
 use App\Actions\GenerateLessonAction;
+use App\Contracts\LessonGenerator;
 use App\Models\{User, BnccSkill, LessonPlan};
-use App\Services\{AiService, LessonData};
+use App\Services\LessonData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -829,9 +826,9 @@ test('ação gera plano, trilha, tópicos e quiz', function () {
         topicos: [['titulo' => 't1', 'resumo' => 's1'], ['titulo' => 't2', 'resumo' => 's2']],
         questoes: [['enunciado' => 'q', 'opcoes' => ['a', 'b'], 'correta' => 1]],
     );
-    $ai = Mockery::mock(AiService::class);
-    $ai->shouldReceive('generateLesson')->once()->andReturn($data);
-    app()->instance(AiService::class, $ai);
+    $ai = Mockery::mock(LessonGenerator::class);
+    $ai->shouldReceive('generate')->once()->andReturn($data);
+    app()->instance(LessonGenerator::class, $ai);
 
     $user = User::factory()->create();
     $skill = BnccSkill::create(['code' => 'EF06MA01', 'disciplina' => 'Matemática', 'ano' => '6º ano', 'descricao' => 'x']);
@@ -879,20 +876,20 @@ public static function gerarCodigo(): string
 // app/Actions/GenerateLessonAction.php
 namespace App\Actions;
 
+use App\Contracts\LessonGenerator;
 use App\Models\LessonPlan;
 use App\Models\StudyTrail;
-use App\Services\AiService;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class GenerateLessonAction
 {
-    public function __construct(private AiService $ai) {}
+    public function __construct(private LessonGenerator $ai) {}
 
     public function execute(LessonPlan $plan): void
     {
         try {
-            $data = $this->ai->generateLesson($plan->bnccSkill, $plan->duracao_min);
+            $data = $this->ai->generate($plan->bnccSkill, $plan->duracao_min);
 
             DB::transaction(function () use ($plan, $data) {
                 $plan->update([
