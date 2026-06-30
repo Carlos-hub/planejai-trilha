@@ -5,6 +5,7 @@ namespace App\Filament\Resources\LessonPlans;
 use App\Filament\Resources\LessonPlans\Pages\CreateLessonPlan;
 use App\Filament\Resources\LessonPlans\Pages\EditLessonPlan;
 use App\Filament\Resources\LessonPlans\Pages\ListLessonPlans;
+use App\Filament\Resources\LessonPlans\Pages\Turma;
 use App\Filament\Resources\LessonPlans\Schemas\LessonPlanForm;
 use App\Filament\Resources\LessonPlans\Tables\LessonPlansTable;
 use App\Models\LessonPlan;
@@ -43,6 +44,7 @@ class LessonPlanResource extends Resource
             'index' => ListLessonPlans::route('/'),
             'create' => CreateLessonPlan::route('/create'),
             'edit' => EditLessonPlan::route('/{record}/edit'),
+            'turma' => Turma::route('/{record}/turma'),
         ];
     }
 }

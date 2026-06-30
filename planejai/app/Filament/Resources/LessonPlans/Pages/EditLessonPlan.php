@@ -39,6 +39,12 @@ class EditLessonPlan extends EditRecord
                     $this->record->trail->publicar();
                     Notification::make()->title('Trilha publicada')->success()->send();
                 }),
+            Action::make('turma')
+                ->label('Ver turma')
+                ->icon('heroicon-o-users')
+                ->color('gray')
+                ->visible(fn () => (bool) $this->record->trail)
+                ->url(fn () => Turma::getUrl(['record' => $this->record])),
             DeleteAction::make(),
         ];
     }
