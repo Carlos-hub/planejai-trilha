@@ -21,6 +21,7 @@ class EditLessonPlan extends EditRecord
                 ->icon('heroicon-o-sparkles')
                 ->color('primary')
                 ->requiresConfirmation()
+                ->visible(fn () => (bool) $this->record->bncc_skill_id)
                 ->action(function () {
                     app(GenerateLessonAction::class)->execute($this->record);
                     $this->record->refresh();

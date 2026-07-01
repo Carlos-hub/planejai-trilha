@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\LessonPlans\Schemas;
 
 use App\Models\BnccSkill;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -14,12 +15,22 @@ class LessonPlanForm
     {
         return $schema
             ->components([
+                TextInput::make('titulo')
+                    ->label('Título do plano')
+                    ->maxLength(160)
+                    ->columnSpanFull(),
+                Placeholder::make('origem_curriculo')
+                    ->label('Origem (currículo)')
+                    ->content(fn ($record) => $record?->curriculumUnit
+                        ? "{$record->curriculumUnit->componente} — {$record->curriculumUnit->serie} · {$record->curriculumUnit->trimestre}º trimestre ({$record->curriculumUnit->origem})"
+                        : '—')
+                    ->visible(fn ($record) => (bool) $record?->curriculum_unit_id),
                 Select::make('bncc_skill_id')
                     ->label('Habilidade BNCC')
                     ->options(fn () => BnccSkill::all()
                         ->mapWithKeys(fn ($s) => [$s->id => "{$s->code} — {$s->disciplina} ({$s->ano})"]))
                     ->searchable()
-                    ->required(),
+                    ->helperText('Opcional quando o plano vem do currículo.'),
                 TextInput::make('duracao_min')
                     ->label('Duração (min)')
                     ->numeric()

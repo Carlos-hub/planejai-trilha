@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(BnccSeeder::class);
+        $this->call(CurriculumSeeder::class);
+        $this->call(ExtraSubjectsSeeder::class);
 
         User::updateOrCreate(
             ['email' => 'professor@planejai.test'],
