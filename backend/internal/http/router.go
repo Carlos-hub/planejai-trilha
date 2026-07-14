@@ -35,6 +35,8 @@ func NewRouter(d Deps) http.Handler {
 		r.Post("/auth/register", d.register)
 		r.Post("/auth/logout", d.logout)
 		r.Get("/t/{code}", d.publicTrail)
+		r.Post("/t/{code}/attempt", d.startAttempt)
+		r.Post("/attempts/{id}/answers", d.submitAnswers)
 		r.Group(func(r chi.Router) {
 			r.Use(d.RequireAuth)
 			r.Get("/me", d.me)
