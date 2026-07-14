@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: planejai
+      POSTGRES_PASSWORD: planejai
+      POSTGRES_DB: planejai
+    ports: ["5433:5432"]
+    volumes: ["dbdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U planejai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: ./backend
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://planejai:planejai@db:5432/planejai?sslmode=disable
+    ports: ["8080:8080"]
+    depends_on:
+      db: { condition: service_healthy }
+  web:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports: ["3000:3000"]
+    depends_on: [api]
+volumes:
+  dbdata:

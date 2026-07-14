@@ -1,0 +1,74 @@
+[
+  {
+    "code": "EF67LP28",
+    "disciplina": "Língua Portuguesa",
+    "ano": "6º ano",
+    "descricao": "Ler e compreender textos argumentativos identificando tese e argumentos."
+  },
+  {
+    "code": "EF07MA09",
+    "disciplina": "Matemática",
+    "ano": "7º ano",
+    "descricao": "Resolver problemas com números racionais em operações de adição e subtração."
+  },
+  {
+    "code": "EF07MA01",
+    "disciplina": "Matemática",
+    "ano": "7º ano",
+    "descricao": "Utilizar números racionais para explorar operações matemáticas elementares."
+  },
+  {
+    "code": "EF08CI01",
+    "disciplina": "Ciências",
+    "ano": "8º ano",
+    "descricao": "Identificar propriedades comuns e diferenças entre os materiais e seus usos em diferentes contextos."
+  },
+  {
+    "code": "EF08CI08",
+    "disciplina": "Ciências",
+    "ano": "8º ano",
+    "descricao": "Descrever organismos multicelulares e unicelulares identificando diferenças."
+  },
+  {
+    "code": "EF09HI01",
+    "disciplina": "História",
+    "ano": "9º ano",
+    "descricao": "Analisar a industrialização em diferentes regiões do Brasil e suas consequências."
+  },
+  {
+    "code": "EF09HI11",
+    "disciplina": "História",
+    "ano": "9º ano",
+    "descricao": "Identificar as tensões e conflitos do final do século XIX e início do século XX."
+  },
+  {
+    "code": "EF07GE05",
+    "disciplina": "Geografia",
+    "ano": "7º ano",
+    "descricao": "Analisar as mudanças na composição populacional e suas impacções espaciais."
+  },
+  {
+    "code": "EF08GE17",
+    "disciplina": "Geografia",
+    "ano": "8º ano",
+    "descricao": "Compreender as características do espaço agrário e suas transformações."
+  },
+  {
+    "code": "EF06LP51",
+    "disciplina": "Língua Portuguesa",
+    "ano": "6º ano",
+    "descricao": "Compreender textos que circulam em diferentes contextos sociais."
+  },
+  {
+    "code": "EF09MA06",
+    "disciplina": "Matemática",
+    "ano": "9º ano",
+    "descricao": "Compreender noções básicas de proporcionalidade em situações reais."
+  },
+  {
+    "code": "EF07CI03",
+    "disciplina": "Ciências",
+    "ano": "7º ano",
+    "descricao": "Descrever características da radiação solar e seus efeitos."
+  }
+]
