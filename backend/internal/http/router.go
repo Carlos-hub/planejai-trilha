@@ -6,10 +6,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
 
 // Deps holds handler dependencies; extended in later tasks.
-type Deps struct{}
+type Deps struct {
+	Store *store.Queries
+	Pool  *pgxpool.Pool
+}
 
 func NewRouter(d Deps) http.Handler {
 	r := chi.NewRouter()
