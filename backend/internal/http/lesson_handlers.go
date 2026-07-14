@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -339,6 +340,212 @@ func (d Deps) patchLesson(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar aula"})
 			return
 		}
+	}
+
+	resp, err := d.buildLessonResponse(r, updated)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao montar resposta"})
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// generateLessonRequest is the JSON DTO accepted by the AI generate endpoint.
+type generateLessonRequest struct {
+	BnccSkillID int64 `json:"bncc_skill_id"`
+	Duracao     int   `json:"duracao"`
+}
+
+// generateLesson handles POST /api/lessons/generate: creates a new lesson
+// plan by invoking the AI generator for the given BNCC skill/duration.
+func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
+	userID, ok := userIDFromContext(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
+		return
+	}
+
+	if d.Gen == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "gerador de IA indisponível"})
+		return
+	}
+
+	var req generateLessonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "corpo inválido"})
+		return
+	}
+
+	ctx := r.Context()
+	skill, err := d.Store.GetBnccSkill(ctx, req.BnccSkillID)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "habilidade BNCC inválida"})
+		return
+	}
+
+	bnccSkillID := req.BnccSkillID
+	lp, err := d.Store.CreateLessonPlan(ctx, store.CreateLessonPlanParams{
+		UserID:      userID,
+		BnccSkillID: &bnccSkillID,
+		DuracaoMin:  int32(req.Duracao),
+		Origem:      "ia",
+		Status:      "rascunho",
+	})
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao criar aula"})
+		return
+	}
+
+	data, err := d.Gen.Generate(ctx, skill, req.Duracao)
+	if err != nil {
+		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "falha na geração"})
+		return
+	}
+
+	if err := d.saveLessonContent(ctx, lp.ID, data); err != nil {
+		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao salvar conteúdo"})
+		return
+	}
+
+	lp, err = d.Store.GetLessonPlan(ctx, lp.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar aula"})
+		return
+	}
+
+	resp, err := d.buildLessonResponse(r, lp)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao montar resposta"})
+		return
+	}
+	writeJSON(w, http.StatusCreated, resp)
+}
+
+// lessonToData reconstructs the current LessonData draft for a lesson plan
+// by reading the lesson row plus its trail's topics and quiz questions.
+func (d Deps) lessonToData(ctx context.Context, lp store.LessonPlan) (lesson.LessonData, error) {
+	data := lesson.LessonData{
+		Plano: lesson.Plano{
+			Objetivos:   lp.Objetivos,
+			Metodologia: lp.Metodologia,
+			Recursos:    lp.Recursos,
+			Avaliacao:   lp.Avaliacao,
+		},
+		Atividade: lp.Atividade,
+	}
+
+	trail, err := d.Store.GetTrailByLesson(ctx, lp.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return data, nil
+		}
+		return lesson.LessonData{}, err
+	}
+
+	topics, err := d.Store.ListTopics(ctx, trail.ID)
+	if err != nil {
+		return lesson.LessonData{}, err
+	}
+	for _, t := range topics {
+		data.Trilha.Topicos = append(data.Trilha.Topicos, lesson.Topico{
+			Titulo: t.Titulo,
+			Resumo: t.Resumo,
+		})
+	}
+
+	quiz, err := d.Store.GetQuizByTrail(ctx, trail.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return data, nil
+		}
+		return lesson.LessonData{}, err
+	}
+
+	questions, err := d.Store.ListQuestions(ctx, quiz.ID)
+	if err != nil {
+		return lesson.LessonData{}, err
+	}
+	for _, q := range questions {
+		var opcoes []string
+		if err := json.Unmarshal(q.Opcoes, &opcoes); err != nil {
+			return lesson.LessonData{}, err
+		}
+		data.Trilha.Quiz.Questoes = append(data.Trilha.Quiz.Questoes, lesson.Questao{
+			Enunciado: q.Enunciado,
+			Opcoes:    opcoes,
+			Correta:   int(q.Correta),
+		})
+	}
+
+	return data, nil
+}
+
+// enhanceLesson handles POST /api/lessons/:id/enhance: reconstructs the
+// current lesson draft and asks the AI generator to improve it, persisting
+// the result with origem=ia_aprimorado.
+func (d Deps) enhanceLesson(w http.ResponseWriter, r *http.Request) {
+	userID, ok := userIDFromContext(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
+		return
+	}
+
+	lp, ok := d.loadOwnedLesson(w, r, userID)
+	if !ok {
+		return
+	}
+
+	if d.Gen == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "gerador de IA indisponível"})
+		return
+	}
+
+	ctx := r.Context()
+	draft, err := d.lessonToData(ctx, lp)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar aula"})
+		return
+	}
+
+	var skill store.BnccSkill
+	if lp.BnccSkillID != nil {
+		skill, err = d.Store.GetBnccSkill(ctx, *lp.BnccSkillID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar habilidade BNCC"})
+			return
+		}
+	}
+
+	enhanced, err := d.Gen.Enhance(ctx, draft, skill)
+	if err != nil {
+		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
+		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "falha no aprimoramento"})
+		return
+	}
+
+	if err := d.saveLessonContent(ctx, lp.ID, enhanced); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao salvar conteúdo"})
+		return
+	}
+
+	// saveLessonContent preserves the previous origem; explicitly mark this
+	// lesson as AI-enhanced now that the draft has been improved.
+	updated, err := d.Store.UpdateLessonPlan(ctx, store.UpdateLessonPlanParams{
+		ID:          lp.ID,
+		BnccSkillID: lp.BnccSkillID,
+		DuracaoMin:  lp.DuracaoMin,
+		Objetivos:   enhanced.Plano.Objetivos,
+		Metodologia: enhanced.Plano.Metodologia,
+		Recursos:    enhanced.Plano.Recursos,
+		Avaliacao:   enhanced.Plano.Avaliacao,
+		Atividade:   enhanced.Atividade,
+		Origem:      "ia_aprimorado",
+	})
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao atualizar aula"})
+		return
 	}
 
 	resp, err := d.buildLessonResponse(r, updated)

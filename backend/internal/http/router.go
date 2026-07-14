@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Carlos-hub/planejai/backend/internal/lesson"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
 
@@ -18,6 +19,7 @@ type Deps struct {
 	Store         *store.Queries
 	Pool          *pgxpool.Pool
 	SessionSecret string
+	Gen           lesson.Generator
 }
 
 func NewRouter(d Deps) http.Handler {
@@ -39,6 +41,8 @@ func NewRouter(d Deps) http.Handler {
 			r.Get("/lessons", d.listLessons)
 			r.Get("/lessons/{id}", d.getLesson)
 			r.Patch("/lessons/{id}", d.patchLesson)
+			r.Post("/lessons/generate", d.generateLesson)
+			r.Post("/lessons/{id}/enhance", d.enhanceLesson)
 		})
 	})
 	return r
