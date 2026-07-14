@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { apiFetch } from "@/lib/api";
-import type { Lesson } from "@/lib/types";
+import type { Lesson, PublishResult } from "@/lib/types";
 import { LessonEditor, type LessonContent } from "@/components/lesson-editor";
 import { Button } from "@/components/ui/button";
+import { ShareLinks } from "@/components/share-links";
 
 function toContent(lesson: Lesson): LessonContent {
   return { plano: lesson.plano, atividade: lesson.atividade, trilha: lesson.trilha };
@@ -23,6 +25,9 @@ export default function LessonDetailPage() {
   const [saving, setSaving] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     apiFetch<Lesson>(`/api/lessons/${lessonId}`)
@@ -86,6 +91,21 @@ export default function LessonDetailPage() {
     }
   }
 
+  async function handlePublish() {
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const result = await apiFetch<PublishResult>(`/api/trails/${lessonId}/publish`, {
+        method: "POST",
+      });
+      setPublishResult(result);
+    } catch {
+      setPublishError("Não foi possível publicar a trilha. Tente novamente.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   if (loadError) {
     return (
       <div className="mx-auto max-w-5xl p-4 sm:p-6">
@@ -140,6 +160,41 @@ export default function LessonDetailPage() {
           </Button>
         }
       />
+
+      <div className="flex flex-col gap-3 rounded-xl border p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold">Publicar trilha</h2>
+            {lesson.status !== "pronto" && !publishResult && (
+              <p className="text-sm text-muted-foreground">
+                Salve o conteúdo da aula e deixe o status como &quot;Pronto&quot; antes de publicar.
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              onClick={handlePublish}
+              disabled={publishing || lesson.status !== "pronto"}
+            >
+              {publishing ? "Publicando..." : "Publicar trilha"}
+            </Button>
+            <Button type="button" variant="outline" render={<Link href={`/lessons/${lesson.id}/stats`} />}>
+              Ver turma
+            </Button>
+          </div>
+        </div>
+
+        {publishError && (
+          <p className="text-sm text-destructive" role="alert">
+            {publishError}
+          </p>
+        )}
+
+        {publishResult && (
+          <ShareLinks codigo={publishResult.codigo} publicaUrl={publishResult.publica_url} />
+        )}
+      </div>
     </div>
   );
 }
