@@ -61,6 +61,7 @@ Arquitetura de monorepo com backend Go (API REST) e frontend Next.js separados, 
 - Docker e Docker Compose
 - Go 1.23 (opcional, para desenvolvimento local)
 - Node.js 20+ (opcional, para desenvolvimento local)
+- `curl` e `jq` (para rodar `scripts/smoke.sh`)
 
 ### Executar com Docker Compose
 
@@ -81,6 +82,25 @@ docker compose up
 ```
 
 > Docker faz o build automático de `backend/` (Go + Dockerfile) e `frontend/` (Next.js + Dockerfile).
+
+> A API roda as migrações do banco (via [goose](https://github.com/pressly/goose)) e o seed do professor demo automaticamente na inicialização — não é preciso rodar `goose` manualmente para subir um banco limpo.
+
+### Smoke test (ponta a ponta)
+
+Valida o fluxo completo (login → criar aula manual → publicar trilha → leitura pública → tentativa do aluno → pontuação → dashboard → export PDF) sem depender da IA (evita o endpoint `/generate`, que exige uma `ANTHROPIC_API_KEY` real):
+
+```bash
+cp .env.example .env
+bash scripts/smoke.sh
+```
+
+O script sobe `db`, `api` e `web` via `docker compose up -d --build`, espera o banco e a API ficarem saudáveis e roda as asserções via `curl` + `jq`. Ao final, imprime um resumo com o código da trilha, a pontuação obtida e `PDF OK`, e sai com código 0 em caso de sucesso.
+
+Se o build do `web` estiver lento ou não for necessário (só quer validar a API), rode apenas `db` + `api`:
+
+```bash
+SMOKE_SKIP_WEB=1 bash scripts/smoke.sh
+```
 
 ### Configurar a IA
 
