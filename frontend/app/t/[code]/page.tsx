@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import type { PublicTrail } from "@/lib/types";
 import { NameGate, attemptStorageKey } from "@/components/name-gate";
 import { TrailView } from "@/components/trail-view";
+import { QuizRunner } from "@/components/quiz-runner";
 
 type Phase = "name" | "topics" | "quiz";
 
@@ -132,16 +133,13 @@ export default function PublicTrailPage() {
         <TrailView trail={trail} onFinishTopics={handleFinishTopics} />
       ) : null}
 
-      {phase === "quiz" ? (
-        // Seam for Task 9.2: QuizRunner will be rendered here, receiving
-        // trail.quiz and attemptId (see below) to submit answers to
-        // POST /api/attempts/:id/answers.
-        <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-          Quiz em breve.
-          {attemptId != null && (
-            <p className="mt-2 text-xs opacity-60">Tentativa #{attemptId}</p>
-          )}
-        </div>
+      {phase === "quiz" && attemptId != null ? (
+        <QuizRunner
+          questoes={trail.quiz.questoes}
+          attemptId={attemptId}
+          code={code}
+          publicaUrl={typeof window !== "undefined" ? window.location.href : undefined}
+        />
       ) : null}
     </main>
   );
