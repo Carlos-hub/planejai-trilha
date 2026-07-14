@@ -217,6 +217,11 @@ func (d Deps) submitAnswers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if attempt.ConcluidoEm.Valid {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "tentativa já concluída"})
+		return
+	}
+
 	quiz, err := d.Store.GetQuizByTrail(ctx, attempt.StudyTrailID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

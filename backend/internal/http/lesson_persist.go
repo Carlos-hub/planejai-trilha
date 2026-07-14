@@ -16,7 +16,12 @@ import (
 // with topicos and quiz) for a lesson plan, transactionally. It replaces any
 // existing topics/questions for the lesson's trail and marks the lesson as
 // 'pronto' on success.
-func (d Deps) saveLessonContent(ctx context.Context, lessonID int64, data lesson.LessonData) error {
+//
+// origem controls the lesson_plans.origem column update within the same
+// transaction: an empty string preserves the row's current origem, while a
+// non-empty value overrides it (e.g. "ia_aprimorado" after an enhance pass).
+// This keeps the content write and the origem update atomic.
+func (d Deps) saveLessonContent(ctx context.Context, lessonID int64, data lesson.LessonData, origem string) error {
 	tx, err := d.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -80,6 +85,11 @@ func (d Deps) saveLessonContent(ctx context.Context, lessonID int64, data lesson
 		return fmt.Errorf("get lesson plan: %w", err)
 	}
 
+	newOrigem := current.Origem
+	if origem != "" {
+		newOrigem = origem
+	}
+
 	if _, err := q.UpdateLessonPlan(ctx, store.UpdateLessonPlanParams{
 		ID:          lessonID,
 		BnccSkillID: current.BnccSkillID,
@@ -89,7 +99,7 @@ func (d Deps) saveLessonContent(ctx context.Context, lessonID int64, data lesson
 		Recursos:    data.Plano.Recursos,
 		Avaliacao:   data.Plano.Avaliacao,
 		Atividade:   data.Atividade,
-		Origem:      current.Origem,
+		Origem:      newOrigem,
 	}); err != nil {
 		return fmt.Errorf("update lesson plan: %w", err)
 	}

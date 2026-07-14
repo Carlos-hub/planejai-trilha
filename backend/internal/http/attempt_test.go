@@ -206,4 +206,54 @@ func TestAttemptScoring(t *testing.T) {
 	if badSubmitResp.StatusCode != http.StatusNotFound {
 		t.Fatalf("submit unknown attempt want 404 got %d", badSubmitResp.StatusCode)
 	}
+
+	// Re-submitting answers on an already-completed attempt must be
+	// rejected with 409 and must not mutate pontos or insert duplicate
+	// answer rows (no unique constraint on attempt_answers guards this).
+	resubmitPayload := map[string]any{
+		"answers": []map[string]any{
+			{"quiz_question_id": q1.ID, "escolhida": 0},
+			{"quiz_question_id": q2.ID, "escolhida": 2},
+		},
+	}
+	resubmitBytes, err := json.Marshal(resubmitPayload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resubmitResp, err := http.Post(srv.URL+"/api/attempts/"+attemptIDStr+"/answers", "application/json", bytes.NewReader(resubmitBytes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resubmitResp.Body.Close()
+	if resubmitResp.StatusCode != http.StatusConflict {
+		t.Fatalf("resubmit completed attempt want 409 got %d", resubmitResp.StatusCode)
+	}
+	var resubmitErr struct {
+		Error string `json:"error"`
+	}
+	if err := json.NewDecoder(resubmitResp.Body).Decode(&resubmitErr); err != nil {
+		t.Fatal(err)
+	}
+	if resubmitErr.Error != "tentativa já concluída" {
+		t.Fatalf("want error 'tentativa já concluída' got %q", resubmitErr.Error)
+	}
+
+	// pontos must be unchanged even though the resubmit payload would have
+	// scored both questions correct (would have changed pontos if applied).
+	attemptAfterResubmit, err := d.Store.GetAttempt(ctx, startedAttempt.AttemptID)
+	if err != nil {
+		t.Fatalf("GetAttempt after resubmit: %v", err)
+	}
+	if attemptAfterResubmit.Pontos != attempt.Pontos {
+		t.Fatalf("pontos changed after rejected resubmit: want %d got %d", attempt.Pontos, attemptAfterResubmit.Pontos)
+	}
+
+	// no duplicate answer rows should have been inserted.
+	var answerCount int
+	if err := d.Pool.QueryRow(ctx, "SELECT count(*) FROM attempt_answers WHERE student_attempt_id=$1", startedAttempt.AttemptID).Scan(&answerCount); err != nil {
+		t.Fatalf("count attempt_answers: %v", err)
+	}
+	if answerCount != result.Total {
+		t.Fatalf("want %d answer rows (no duplicates), got %d", result.Total, answerCount)
+	}
 }

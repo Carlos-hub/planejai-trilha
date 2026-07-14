@@ -177,7 +177,7 @@ func (d Deps) createLesson(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.hasContent() {
-		if err := d.saveLessonContent(r.Context(), lp.ID, req.toLessonData()); err != nil {
+		if err := d.saveLessonContent(r.Context(), lp.ID, req.toLessonData(), ""); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao salvar conteúdo"})
 			return
 		}
@@ -334,7 +334,7 @@ func (d Deps) patchLesson(w http.ResponseWriter, r *http.Request) {
 			Avaliacao:   avaliacao,
 		}
 		data.Atividade = atividade
-		if err := d.saveLessonContent(r.Context(), lp.ID, data); err != nil {
+		if err := d.saveLessonContent(r.Context(), lp.ID, data, ""); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao salvar conteúdo"})
 			return
 		}
@@ -554,7 +554,7 @@ func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := d.saveLessonContent(ctx, lp.ID, data); err != nil {
+	if err := d.saveLessonContent(ctx, lp.ID, data, ""); err != nil {
 		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao salvar conteúdo"})
 		return
@@ -676,26 +676,17 @@ func (d Deps) enhanceLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := d.saveLessonContent(ctx, lp.ID, enhanced); err != nil {
+	// saveLessonContent sets origem="ia_aprimorado" atomically, in the same
+	// transaction as the content write, so a failure partway through never
+	// leaves the lesson with fresh content but a stale origem.
+	if err := d.saveLessonContent(ctx, lp.ID, enhanced, "ia_aprimorado"); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao salvar conteúdo"})
 		return
 	}
 
-	// saveLessonContent preserves the previous origem; explicitly mark this
-	// lesson as AI-enhanced now that the draft has been improved.
-	updated, err := d.Store.UpdateLessonPlan(ctx, store.UpdateLessonPlanParams{
-		ID:          lp.ID,
-		BnccSkillID: lp.BnccSkillID,
-		DuracaoMin:  lp.DuracaoMin,
-		Objetivos:   enhanced.Plano.Objetivos,
-		Metodologia: enhanced.Plano.Metodologia,
-		Recursos:    enhanced.Plano.Recursos,
-		Avaliacao:   enhanced.Plano.Avaliacao,
-		Atividade:   enhanced.Atividade,
-		Origem:      "ia_aprimorado",
-	})
+	updated, err := d.Store.GetLessonPlan(ctx, lp.ID)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao atualizar aula"})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar aula"})
 		return
 	}
 

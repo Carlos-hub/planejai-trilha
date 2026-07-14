@@ -45,7 +45,7 @@ func TestSaveLessonContent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := d.saveLessonContent(ctx, lp.ID, data); err != nil {
+	if err := d.saveLessonContent(ctx, lp.ID, data, ""); err != nil {
 		t.Fatalf("saveLessonContent: %v", err)
 	}
 
@@ -90,8 +90,20 @@ func TestSaveLessonContent(t *testing.T) {
 	}
 
 	// calling again should replace (not duplicate) topics/questions
-	if err := d.saveLessonContent(ctx, lp.ID, data); err != nil {
+	if err := d.saveLessonContent(ctx, lp.ID, data, ""); err != nil {
 		t.Fatalf("second saveLessonContent: %v", err)
+	}
+
+	// calling with a non-empty origem should override it atomically
+	if err := d.saveLessonContent(ctx, lp.ID, data, "ia_aprimorado"); err != nil {
+		t.Fatalf("third saveLessonContent with origem override: %v", err)
+	}
+	overridden, err := d.Store.GetLessonPlan(ctx, lp.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if overridden.Origem != "ia_aprimorado" {
+		t.Fatalf("want origem ia_aprimorado after override, got %s", overridden.Origem)
 	}
 	topics2, err := d.Store.ListTopics(ctx, trail.ID)
 	if err != nil {
