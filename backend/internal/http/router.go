@@ -3,9 +3,11 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Carlos-hub/planejai/backend/internal/store"
@@ -13,18 +15,49 @@ import (
 
 // Deps holds handler dependencies; extended in later tasks.
 type Deps struct {
-	Store *store.Queries
-	Pool  *pgxpool.Pool
+	Store         *store.Queries
+	Pool          *pgxpool.Pool
+	SessionSecret string
 }
 
 func NewRouter(d Deps) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(corsMiddleware)
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
+	r.Route("/api", func(r chi.Router) {
+		r.Post("/auth/login", d.login)
+		r.Post("/auth/logout", d.logout)
+		r.Group(func(r chi.Router) {
+			r.Use(d.RequireAuth)
+			r.Get("/me", d.me)
+		})
+	})
 	return r
+}
+
+// corsMiddleware allows the frontend origin (http://localhost:3000) to make
+// credentialed requests (cookies) to the API.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// pgTime converts a time.Time into a valid pgtype.Timestamptz.
+func pgTime(t time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: t, Valid: true}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
