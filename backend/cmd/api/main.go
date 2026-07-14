@@ -7,6 +7,7 @@ import (
 	"os"
 
 	apihttp "github.com/Carlos-hub/planejai/backend/internal/http"
+	"github.com/Carlos-hub/planejai/backend/internal/seed"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
 
@@ -18,11 +19,15 @@ func main() {
 	}
 	defer pool.Close()
 
+	deps := apihttp.Deps{Store: store.New(pool), Pool: pool}
+	if err := seed.BNCC(ctx, deps.Store, "seed/bncc.json"); err != nil {
+		log.Printf("seed: %v", err)
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	deps := apihttp.Deps{Store: store.New(pool), Pool: pool}
 	log.Printf("listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, apihttp.NewRouter(deps)); err != nil {
 		log.Fatal(err)
