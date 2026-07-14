@@ -34,6 +34,7 @@ func NewRouter(d Deps) http.Handler {
 		r.Post("/auth/login", d.login)
 		r.Post("/auth/register", d.register)
 		r.Post("/auth/logout", d.logout)
+		r.Get("/t/{code}", d.publicTrail)
 		r.Group(func(r chi.Router) {
 			r.Use(d.RequireAuth)
 			r.Get("/me", d.me)
@@ -43,7 +44,7 @@ func NewRouter(d Deps) http.Handler {
 			r.Patch("/lessons/{id}", d.patchLesson)
 			r.Post("/lessons/generate", d.generateLesson)
 			r.Post("/lessons/{id}/enhance", d.enhanceLesson)
-				r.Post("/trails/{id}/publish", d.publishTrail)
+			r.Post("/trails/{id}/publish", d.publishTrail)
 		})
 	})
 	return r
