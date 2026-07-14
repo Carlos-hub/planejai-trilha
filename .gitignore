@@ -6,3 +6,6 @@
 /storage/*.key
 .DS_Store
 /.superpowers
+
+# local compose override
+docker-compose.override.yml
