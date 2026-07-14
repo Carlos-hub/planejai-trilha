@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
-import type { BnccSkill, Plano, Questao, Topico, Trilha } from "@/lib/types";
+import {
+  Target,
+  Route,
+  ListChecks,
+  Plus,
+  Trash2,
+  Check,
+} from "lucide-react";
+import type { Plano, Questao, Topico, Trilha } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { LessonMeta } from "@/components/lesson-meta";
 
 export interface LessonContent {
   plano: Plano;
@@ -27,13 +29,21 @@ export const EMPTY_LESSON_CONTENT: LessonContent = {
   trilha: { topicos: [], quiz: { questoes: [] } },
 };
 
-function emptyTopico(): Topico {
-  return { titulo: "", resumo: "" };
-}
+const emptyTopico = (): Topico => ({ titulo: "", resumo: "" });
+const emptyQuestao = (): Questao => ({ enunciado: "", opcoes: ["", ""], correta: 0 });
 
-function emptyQuestao(): Questao {
-  return { enunciado: "", opcoes: ["", ""], correta: 0 };
-}
+const PLANO_FIELDS: {
+  key: keyof Plano;
+  label: string;
+  placeholder: string;
+}[] = [
+  { key: "objetivos", label: "Objetivos", placeholder: "O que o aluno deve aprender…" },
+  { key: "metodologia", label: "Metodologia", placeholder: "Como a aula será conduzida…" },
+  { key: "recursos", label: "Recursos", placeholder: "Materiais, ferramentas, referências…" },
+  { key: "avaliacao", label: "Avaliação", placeholder: "Como o aprendizado será avaliado…" },
+];
+
+const LETTERS = "ABCDEFGH";
 
 interface LessonEditorProps {
   value: LessonContent;
@@ -60,301 +70,342 @@ export function LessonEditor({
   saveLabel = "Salvar",
   extraActions,
 }: LessonEditorProps) {
-  const [skills, setSkills] = useState<BnccSkill[] | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    apiFetch<BnccSkill[]>("/api/bncc-skills")
-      .then((data) => {
-        if (!cancelled) setSkills(data);
-      })
-      .catch(() => {
-        if (!cancelled) setSkills([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { topicos } = value.trilha;
+  const { questoes } = value.trilha.quiz;
 
   function updatePlano(field: keyof Plano, text: string) {
     onChange({ ...value, plano: { ...value.plano, [field]: text } });
   }
-
-  function updateAtividade(text: string) {
-    onChange({ ...value, atividade: text });
-  }
-
   function updateTopico(index: number, field: keyof Topico, text: string) {
-    const topicos = value.trilha.topicos.map((t, i) =>
-      i === index ? { ...t, [field]: text } : t
-    );
-    onChange({ ...value, trilha: { ...value.trilha, topicos } });
+    onChange({
+      ...value,
+      trilha: {
+        ...value.trilha,
+        topicos: topicos.map((t, i) => (i === index ? { ...t, [field]: text } : t)),
+      },
+    });
   }
-
   function addTopico() {
     onChange({
       ...value,
-      trilha: { ...value.trilha, topicos: [...value.trilha.topicos, emptyTopico()] },
+      trilha: { ...value.trilha, topicos: [...topicos, emptyTopico()] },
     });
   }
-
   function removeTopico(index: number) {
     onChange({
       ...value,
-      trilha: {
-        ...value.trilha,
-        topicos: value.trilha.topicos.filter((_, i) => i !== index),
-      },
+      trilha: { ...value.trilha, topicos: topicos.filter((_, i) => i !== index) },
     });
   }
-
   function updateQuestao(index: number, patch: Partial<Questao>) {
-    const questoes = value.trilha.quiz.questoes.map((q, i) =>
-      i === index ? { ...q, ...patch } : q
-    );
-    onChange({ ...value, trilha: { ...value.trilha, quiz: { questoes } } });
-  }
-
-  function addQuestao() {
     onChange({
       ...value,
       trilha: {
         ...value.trilha,
-        quiz: { questoes: [...value.trilha.quiz.questoes, emptyQuestao()] },
+        quiz: {
+          questoes: questoes.map((q, i) => (i === index ? { ...q, ...patch } : q)),
+        },
       },
     });
   }
-
+  function addQuestao() {
+    onChange({
+      ...value,
+      trilha: { ...value.trilha, quiz: { questoes: [...questoes, emptyQuestao()] } },
+    });
+  }
   function removeQuestao(index: number) {
     onChange({
       ...value,
       trilha: {
         ...value.trilha,
-        quiz: { questoes: value.trilha.quiz.questoes.filter((_, i) => i !== index) },
+        quiz: { questoes: questoes.filter((_, i) => i !== index) },
       },
     });
   }
-
   function updateOpcao(qIndex: number, oIndex: number, text: string) {
-    const questao = value.trilha.quiz.questoes[qIndex];
-    const opcoes = questao.opcoes.map((o, i) => (i === oIndex ? text : o));
-    updateQuestao(qIndex, { opcoes });
+    updateQuestao(qIndex, {
+      opcoes: questoes[qIndex].opcoes.map((o, i) => (i === oIndex ? text : o)),
+    });
   }
-
   function addOpcao(qIndex: number) {
-    const questao = value.trilha.quiz.questoes[qIndex];
-    updateQuestao(qIndex, { opcoes: [...questao.opcoes, ""] });
+    updateQuestao(qIndex, { opcoes: [...questoes[qIndex].opcoes, ""] });
   }
-
   function removeOpcao(qIndex: number, oIndex: number) {
-    const questao = value.trilha.quiz.questoes[qIndex];
-    const opcoes = questao.opcoes.filter((_, i) => i !== oIndex);
-    const correta = questao.correta >= opcoes.length ? 0 : questao.correta;
+    const opcoes = questoes[qIndex].opcoes.filter((_, i) => i !== oIndex);
+    const correta = questoes[qIndex].correta >= opcoes.length ? 0 : questoes[qIndex].correta;
     updateQuestao(qIndex, { opcoes, correta });
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Dados gerais</CardTitle>
-          <CardDescription>Habilidade BNCC e duração da aula.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4 sm:flex-row">
-          <div className="flex flex-1 flex-col gap-1.5">
-            <Label htmlFor="bncc-skill">Habilidade BNCC</Label>
-            <select
-              id="bncc-skill"
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-              value={bnccSkillId ?? ""}
-              onChange={(e) =>
-                onBnccSkillIdChange(e.target.value === "" ? null : Number(e.target.value))
-              }
-            >
-              <option value="">Selecione...</option>
-              {(skills ?? []).map((skill) => (
-                <option key={skill.id} value={skill.id}>
-                  {skill.code} · {skill.disciplina} · {skill.ano}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex w-full flex-col gap-1.5 sm:w-40">
-            <Label htmlFor="duracao">Duração (min)</Label>
-            <Input
-              id="duracao"
-              type="number"
-              min={0}
-              value={duracao}
-              onChange={(e) => onDuracaoChange(Number(e.target.value))}
-            />
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6 pb-24">
+      <Section
+        icon={<Target className="size-4" />}
+        title="Sobre a aula"
+        description="Vincule uma habilidade da BNCC e defina a duração."
+      >
+        <LessonMeta
+          bnccSkillId={bnccSkillId}
+          onBnccSkillIdChange={onBnccSkillIdChange}
+          duracao={duracao}
+          onDuracaoChange={onDuracaoChange}
+        />
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Plano de aula</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="objetivos">Objetivos</Label>
-            <Textarea
-              id="objetivos"
-              value={value.plano.objetivos}
-              onChange={(e) => updatePlano("objetivos", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="metodologia">Metodologia</Label>
-            <Textarea
-              id="metodologia"
-              value={value.plano.metodologia}
-              onChange={(e) => updatePlano("metodologia", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="recursos">Recursos</Label>
-            <Textarea
-              id="recursos"
-              value={value.plano.recursos}
-              onChange={(e) => updatePlano("recursos", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="avaliacao">Avaliação</Label>
-            <Textarea
-              id="avaliacao"
-              value={value.plano.avaliacao}
-              onChange={(e) => updatePlano("avaliacao", e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="atividade">Atividade</Label>
-            <Textarea
-              id="atividade"
-              value={value.atividade}
-              onChange={(e) => updateAtividade(e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Tópicos da trilha</CardTitle>
-          <CardDescription>Os alunos percorrem estes tópicos em ordem.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {value.trilha.topicos.map((topico, index) => (
-            <div key={index} className="flex flex-col gap-2 rounded-lg border p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Tópico {index + 1}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => removeTopico(index)}
-                >
-                  Remover
-                </Button>
-              </div>
-              <Input
-                placeholder="Título"
-                value={topico.titulo}
-                onChange={(e) => updateTopico(index, "titulo", e.target.value)}
-              />
+      <Section
+        icon={<ListChecks className="size-4" />}
+        title="Plano de aula"
+        description="O planejamento do professor — não aparece para o aluno."
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {PLANO_FIELDS.map(({ key, label, placeholder }) => (
+            <div key={key} className="flex flex-col gap-1.5">
+              <Label htmlFor={key}>{label}</Label>
               <Textarea
-                placeholder="Resumo"
-                value={topico.resumo}
-                onChange={(e) => updateTopico(index, "resumo", e.target.value)}
+                id={key}
+                rows={3}
+                placeholder={placeholder}
+                value={value.plano[key]}
+                onChange={(e) => updatePlano(key, e.target.value)}
               />
             </div>
           ))}
-          <Button type="button" variant="outline" size="sm" onClick={addTopico}>
-            + Adicionar tópico
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="mt-4 flex flex-col gap-1.5">
+          <Label htmlFor="atividade">Atividade</Label>
+          <Textarea
+            id="atividade"
+            rows={3}
+            placeholder="Uma atividade prática para fixar o conteúdo…"
+            value={value.atividade}
+            onChange={(e) => onChange({ ...value, atividade: e.target.value })}
+          />
+        </div>
+      </Section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quiz</CardTitle>
-          <CardDescription>Selecione a opção correta de cada questão.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {value.trilha.quiz.questoes.map((questao, qIndex) => (
-            <div key={qIndex} className="flex flex-col gap-2 rounded-lg border p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Questão {qIndex + 1}
-                </span>
+      <Section
+        icon={<Route className="size-4" />}
+        title="Trilha do aluno"
+        description="Os tópicos que o aluno percorre, um de cada vez."
+        action={
+          <Button type="button" variant="outline" size="sm" onClick={addTopico}>
+            <Plus className="size-4" />
+            Tópico
+          </Button>
+        }
+      >
+        {topicos.length === 0 ? (
+          <EmptyHint text="Nenhum tópico ainda. Adicione o primeiro passo da trilha." />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {topicos.map((topico, index) => (
+              <div
+                key={index}
+                className="flex gap-3 rounded-xl border bg-card p-3"
+              >
+                <StepBadge n={index + 1} />
+                <div className="flex flex-1 flex-col gap-2">
+                  <Input
+                    placeholder="Título do tópico"
+                    value={topico.titulo}
+                    onChange={(e) => updateTopico(index, "titulo", e.target.value)}
+                  />
+                  <Textarea
+                    rows={2}
+                    placeholder="Resumo — o que o aluno lê neste tópico"
+                    value={topico.resumo}
+                    onChange={(e) => updateTopico(index, "resumo", e.target.value)}
+                  />
+                </div>
+                <IconButton label="Remover tópico" onClick={() => removeTopico(index)} />
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section
+        icon={<ListChecks className="size-4" />}
+        title="Quiz"
+        description="Marque a alternativa correta de cada questão."
+        action={
+          <Button type="button" variant="outline" size="sm" onClick={addQuestao}>
+            <Plus className="size-4" />
+            Questão
+          </Button>
+        }
+      >
+        {questoes.length === 0 ? (
+          <EmptyHint text="Nenhuma questão ainda. Adicione a primeira pergunta do quiz." />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {questoes.map((questao, qIndex) => (
+              <div key={qIndex} className="rounded-xl border bg-card p-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Questão {qIndex + 1}
+                  </span>
+                  <IconButton
+                    label="Remover questão"
+                    onClick={() => removeQuestao(qIndex)}
+                  />
+                </div>
+                <Textarea
+                  rows={2}
+                  placeholder="Enunciado da pergunta"
+                  value={questao.enunciado}
+                  onChange={(e) => updateQuestao(qIndex, { enunciado: e.target.value })}
+                />
+                <div className="mt-3 flex flex-col gap-2">
+                  {questao.opcoes.map((opcao, oIndex) => {
+                    const correct = questao.correta === oIndex;
+                    return (
+                      <div
+                        key={oIndex}
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors",
+                          correct
+                            ? "border-emerald-300 bg-emerald-50/60"
+                            : "border-transparent"
+                        )}
+                      >
+                        <label
+                          className="cursor-pointer"
+                          title={correct ? "Alternativa correta" : "Marcar como correta"}
+                        >
+                          <input
+                            type="radio"
+                            name={`correta-${qIndex}`}
+                            className="sr-only"
+                            checked={correct}
+                            onChange={() => updateQuestao(qIndex, { correta: oIndex })}
+                          />
+                          <span
+                            className={cn(
+                              "flex size-7 items-center justify-center rounded-md text-sm font-semibold transition-colors",
+                              correct
+                                ? "bg-emerald-500 text-white"
+                                : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            )}
+                          >
+                            {correct ? <Check className="size-4" /> : LETTERS[oIndex]}
+                          </span>
+                        </label>
+                        <Input
+                          placeholder={`Alternativa ${LETTERS[oIndex]}`}
+                          value={opcao}
+                          onChange={(e) => updateOpcao(qIndex, oIndex, e.target.value)}
+                          className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+                        />
+                        <IconButton
+                          label="Remover alternativa"
+                          onClick={() => removeOpcao(qIndex, oIndex)}
+                          disabled={questao.opcoes.length <= 2}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
-                  size="xs"
-                  onClick={() => removeQuestao(qIndex)}
-                >
-                  Remover
-                </Button>
-              </div>
-              <Textarea
-                placeholder="Enunciado"
-                value={questao.enunciado}
-                onChange={(e) => updateQuestao(qIndex, { enunciado: e.target.value })}
-              />
-              <div className="flex flex-col gap-2">
-                {questao.opcoes.map((opcao, oIndex) => (
-                  <div key={oIndex} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name={`correta-${qIndex}`}
-                      checked={questao.correta === oIndex}
-                      onChange={() => updateQuestao(qIndex, { correta: oIndex })}
-                      aria-label={`Opção ${oIndex + 1} correta`}
-                    />
-                    <Input
-                      placeholder={`Opção ${oIndex + 1}`}
-                      value={opcao}
-                      onChange={(e) => updateOpcao(qIndex, oIndex, e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="xs"
-                      disabled={questao.opcoes.length <= 2}
-                      onClick={() => removeOpcao(qIndex, oIndex)}
-                    >
-                      Remover
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xs"
-                  className="self-start"
+                  size="sm"
+                  className="mt-2"
                   onClick={() => addOpcao(qIndex)}
                 >
-                  + Adicionar opção
+                  <Plus className="size-4" />
+                  Adicionar alternativa
                 </Button>
               </div>
-            </div>
-          ))}
-          <Button type="button" variant="outline" size="sm" onClick={addQuestao}>
-            + Adicionar questão
-          </Button>
-        </CardContent>
-      </Card>
+            ))}
+          </div>
+        )}
+      </Section>
 
-      <div className="flex items-center justify-end gap-2">
-        {extraActions}
-        <Button onClick={onSave} disabled={saving}>
-          {saving ? "Salvando..." : saveLabel}
-        </Button>
+      {/* Sticky save bar */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/90 backdrop-blur lg:pl-64">
+        <div className="mx-auto flex max-w-4xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
+          {extraActions}
+          <Button size="lg" onClick={onSave} disabled={saving}>
+            {saving ? "Salvando…" : saveLabel}
+          </Button>
+        </div>
       </div>
     </div>
+  );
+}
+
+function Section({
+  icon,
+  title,
+  description,
+  action,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="p-5 sm:p-6">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-brand-muted text-primary">
+            {icon}
+          </div>
+          <div>
+            <h2 className="font-[family-name:var(--font-display)] text-base font-semibold tracking-tight">
+              {title}
+            </h2>
+            {description && (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
+        </div>
+        {action}
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+function StepBadge({ n }: { n: number }) {
+  return (
+    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+      {n}
+    </div>
+  );
+}
+
+function IconButton({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-30"
+    >
+      <Trash2 className="size-4" />
+    </button>
+  );
+}
+
+function EmptyHint({ text }: { text: string }) {
+  return (
+    <p className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+      {text}
+    </p>
   );
 }

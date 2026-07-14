@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { Lesson, PublishResult } from "@/lib/types";
 import { LessonEditor, type LessonContent } from "@/components/lesson-editor";
@@ -124,17 +125,45 @@ export default function LessonDetailPage() {
     );
   }
 
+  const STATUS_LABELS: Record<string, string> = {
+    rascunho: "Rascunho",
+    pronto: "Pronta",
+    falha: "Falha",
+  };
+  const ORIGEM_LABELS: Record<string, string> = {
+    manual: "Manual",
+    ia: "Gerada com IA",
+    ia_aprimorado: "Aprimorada com IA",
+  };
+
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 p-4 sm:p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Aula #{lesson.id}</h1>
-        <span className="text-sm text-muted-foreground">
-          Status: {lesson.status} · Origem: {lesson.origem}
-        </span>
+    <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6 pb-28 sm:px-6 sm:py-8">
+      <div className="flex flex-col gap-2">
+        <Link
+          href="/"
+          className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          Painel
+        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Aula #{lesson.id}
+          </h1>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">
+            {STATUS_LABELS[lesson.status] ?? lesson.status}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {ORIGEM_LABELS[lesson.origem] ?? lesson.origem}
+          </span>
+        </div>
       </div>
 
       {actionError && (
-        <p className="text-sm text-destructive" role="alert">
+        <p
+          className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
           {actionError}
         </p>
       )}
