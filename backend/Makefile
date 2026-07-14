@@ -1,4 +1,4 @@
-DB_URL ?= postgres://planejai:planejai@localhost:5432/planejai?sslmode=disable
+DB_URL ?= postgres://planejai:planejai@localhost:5433/planejai?sslmode=disable
 
 migrate-up:
 	goose -dir migrations postgres "$(DB_URL)" up

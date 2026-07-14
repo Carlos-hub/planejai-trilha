@@ -5,7 +5,7 @@ services:
       POSTGRES_USER: planejai
       POSTGRES_PASSWORD: planejai
       POSTGRES_DB: planejai
-    ports: ["5432:5432"]
+    ports: ["5433:5432"]
     volumes: ["dbdata:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U planejai"]
