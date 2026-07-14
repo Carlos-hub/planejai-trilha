@@ -430,6 +430,77 @@ func (d Deps) publishTrail(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// tentativaStats is a single student attempt row in the class dashboard.
+type tentativaStats struct {
+	NomeAluno   string  `json:"nome_aluno"`
+	Pontos      int32   `json:"pontos"`
+	ConcluidoEm *string `json:"concluido_em"`
+}
+
+// trailStatsResponse is the shape returned by trailStats.
+type trailStatsResponse struct {
+	TotalAlunos int              `json:"total_alunos"`
+	Concluidos  int              `json:"concluidos"`
+	MediaPontos float64          `json:"media_pontos"`
+	Tentativas  []tentativaStats `json:"tentativas"`
+}
+
+// trailStats handles GET /api/trails/:id/stats: returns class dashboard
+// aggregates (completion counts, average score, per-student attempts) for
+// the study trail belonging to the lesson identified by :id. :id refers to
+// the lesson plan id, not the trail id.
+func (d Deps) trailStats(w http.ResponseWriter, r *http.Request) {
+	userID, ok := userIDFromContext(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
+		return
+	}
+
+	lp, ok := d.loadOwnedLesson(w, r, userID)
+	if !ok {
+		return
+	}
+
+	ctx := r.Context()
+	trail, err := d.Store.GetTrailByLesson(ctx, lp.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "trilha não encontrada"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar trilha"})
+		return
+	}
+
+	rows, err := d.Store.TrailStats(ctx, trail.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar estatísticas"})
+		return
+	}
+
+	resp := trailStatsResponse{
+		TotalAlunos: len(rows),
+		Tentativas:  make([]tentativaStats, 0, len(rows)),
+	}
+
+	var pontosConcluidos int64
+	for _, row := range rows {
+		t := tentativaStats{NomeAluno: row.NomeAluno, Pontos: row.Pontos}
+		if row.ConcluidoEm.Valid {
+			resp.Concluidos++
+			pontosConcluidos += int64(row.Pontos)
+			formatted := row.ConcluidoEm.Time.Format(timeLayout)
+			t.ConcluidoEm = &formatted
+		}
+		resp.Tentativas = append(resp.Tentativas, t)
+	}
+	if resp.Concluidos > 0 {
+		resp.MediaPontos = float64(pontosConcluidos) / float64(resp.Concluidos)
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
 // generateLessonRequest is the JSON DTO accepted by the AI generate endpoint.
 type generateLessonRequest struct {
 	BnccSkillID int64 `json:"bncc_skill_id"`
