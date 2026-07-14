@@ -60,6 +60,15 @@ export interface Lesson {
   trilha: Trilha;
 }
 
+// --- bncc_handlers.go: bnccSkillResponse (GET /api/bncc-skills) ---
+export interface BnccSkill {
+  id: number;
+  code: string;
+  disciplina: string;
+  ano: string;
+  descricao: string;
+}
+
 // --- lesson_handlers.go: publishTrailResponse (POST /api/trails/:id/publish) ---
 export interface PublishResult {
   codigo: string;
