@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
+	"github.com/Carlos-hub/planejai/backend/internal/domain"
 	"github.com/Carlos-hub/planejai/backend/internal/lesson"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
@@ -348,6 +351,83 @@ func (d Deps) patchLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// getenv returns the value of the environment variable key, or def if unset.
+func getenv(key, def string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	return v
+}
+
+const maxPublishAttempts = 5
+
+// publishTrailResponse is the shape returned by publishTrail.
+type publishTrailResponse struct {
+	Codigo     string `json:"codigo"`
+	PublicaURL string `json:"publica_url"`
+}
+
+// publishTrail handles POST /api/trails/:id/publish: publishes the study
+// trail belonging to the lesson identified by :id, assigning it a unique
+// short code. :id refers to the lesson plan id, not the trail id.
+func (d Deps) publishTrail(w http.ResponseWriter, r *http.Request) {
+	userID, ok := userIDFromContext(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
+		return
+	}
+
+	lp, ok := d.loadOwnedLesson(w, r, userID)
+	if !ok {
+		return
+	}
+
+	if lp.Status != "pronto" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "aula ainda não está pronta para publicar"})
+		return
+	}
+
+	ctx := r.Context()
+	trail, err := d.Store.GetTrailByLesson(ctx, lp.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "nenhuma trilha para publicar"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar trilha"})
+		return
+	}
+
+	var codigo string
+	for attempt := 0; attempt < maxPublishAttempts; attempt++ {
+		candidate := domain.NewTrailCode()
+		published, err := d.Store.PublishTrail(ctx, store.PublishTrailParams{ID: trail.ID, Codigo: &candidate})
+		if err == nil {
+			codigo = *published.Codigo
+			break
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			continue
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao publicar trilha"})
+		return
+	}
+
+	if codigo == "" {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "não foi possível gerar um código único"})
+		return
+	}
+
+	baseURL := getenv("PUBLIC_BASE_URL", "http://localhost:3000")
+	writeJSON(w, http.StatusOK, publishTrailResponse{
+		Codigo:     codigo,
+		PublicaURL: baseURL + "/t/" + codigo,
+	})
 }
 
 // generateLessonRequest is the JSON DTO accepted by the AI generate endpoint.
