@@ -23,6 +23,9 @@ func main() {
 	if err := seed.BNCC(ctx, deps.Store, "seed/bncc.json"); err != nil {
 		log.Printf("seed: %v", err)
 	}
+	if err := seed.DemoTeacher(ctx, deps.Store); err != nil {
+		log.Printf("seed: %v", err)
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {

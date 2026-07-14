@@ -30,6 +30,7 @@ func NewRouter(d Deps) http.Handler {
 	})
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/auth/login", d.login)
+		r.Post("/auth/register", d.register)
 		r.Post("/auth/logout", d.logout)
 		r.Group(func(r chi.Router) {
 			r.Use(d.RequireAuth)
