@@ -39,9 +39,9 @@ func UsernameSlug(nome string) string {
 
 func randomFrom(alphabet string, n int) (string, error) {
 	b := make([]byte, n)
-	max := big.NewInt(int64(len(alphabet)))
+	bound := big.NewInt(int64(len(alphabet)))
 	for i := range b {
-		idx, err := rand.Int(rand.Reader, max)
+		idx, err := rand.Int(rand.Reader, bound)
 		if err != nil {
 			return "", err
 		}
