@@ -56,3 +56,36 @@ func TestStudentLogin(t *testing.T) {
 		t.Fatalf("bad login status = %d", w2.Code)
 	}
 }
+
+func TestStudentChangePassword(t *testing.T) {
+	d := testDeps(t)
+	seedStudent(t, d, "aluno.pw.bb", "antiga123")
+	r := NewRouter(d)
+
+	// login to get cookie
+	body, _ := json.Marshal(map[string]string{"usuario": "aluno.pw.bb", "senha": "antiga123"})
+	lreq := httptest.NewRequest("POST", "/api/student/login", bytes.NewReader(body))
+	lw := httptest.NewRecorder()
+	r.ServeHTTP(lw, lreq)
+	cookie := lw.Result().Cookies()[0]
+
+	// wrong current password → 401
+	ch, _ := json.Marshal(map[string]string{"senha_atual": "errada", "senha_nova": "nova12345"})
+	req := httptest.NewRequest("POST", "/api/student/password", bytes.NewReader(ch))
+	req.AddCookie(cookie)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("wrong-current status = %d", w.Code)
+	}
+
+	// correct → 204, and new password logs in
+	ch2, _ := json.Marshal(map[string]string{"senha_atual": "antiga123", "senha_nova": "nova12345"})
+	req2 := httptest.NewRequest("POST", "/api/student/password", bytes.NewReader(ch2))
+	req2.AddCookie(cookie)
+	w2 := httptest.NewRecorder()
+	r.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusNoContent {
+		t.Fatalf("change status = %d body=%s", w2.Code, w2.Body)
+	}
+}

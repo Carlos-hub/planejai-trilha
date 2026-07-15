@@ -41,6 +41,10 @@ func NewRouter(d Deps) http.Handler {
 		r.Post("/student/login", d.studentLogin)
 		r.Post("/student/logout", d.studentLogout)
 		r.Group(func(r chi.Router) {
+			r.Use(d.RequireStudent)
+			r.Post("/student/password", d.studentChangePassword)
+		})
+		r.Group(func(r chi.Router) {
 			r.Use(d.RequireAuth)
 			r.Get("/me", d.me)
 			r.Get("/bncc-skills", d.listBnccSkills)
