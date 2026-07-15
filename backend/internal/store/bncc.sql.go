@@ -21,7 +21,7 @@ func (q *Queries) CountBnccSkills(ctx context.Context) (int64, error) {
 }
 
 const getBnccSkill = `-- name: GetBnccSkill :one
-SELECT id, code, disciplina, ano, descricao FROM bncc_skills WHERE id = $1
+SELECT id, code, disciplina, ano, descricao, assunto FROM bncc_skills WHERE id = $1
 `
 
 func (q *Queries) GetBnccSkill(ctx context.Context, id int64) (BnccSkill, error) {
@@ -33,19 +33,26 @@ func (q *Queries) GetBnccSkill(ctx context.Context, id int64) (BnccSkill, error)
 		&i.Disciplina,
 		&i.Ano,
 		&i.Descricao,
+		&i.Assunto,
 	)
 	return i, err
 }
 
 const insertBnccSkill = `-- name: InsertBnccSkill :exec
-INSERT INTO bncc_skills (code, disciplina, ano, descricao) VALUES ($1,$2,$3,$4)
-ON CONFLICT (code) DO NOTHING
+INSERT INTO bncc_skills (code, disciplina, ano, assunto, descricao)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (code) DO UPDATE SET
+  disciplina = EXCLUDED.disciplina,
+  ano = EXCLUDED.ano,
+  assunto = EXCLUDED.assunto,
+  descricao = EXCLUDED.descricao
 `
 
 type InsertBnccSkillParams struct {
 	Code       string `json:"code"`
 	Disciplina string `json:"disciplina"`
 	Ano        string `json:"ano"`
+	Assunto    string `json:"assunto"`
 	Descricao  string `json:"descricao"`
 }
 
@@ -54,24 +61,28 @@ func (q *Queries) InsertBnccSkill(ctx context.Context, arg InsertBnccSkillParams
 		arg.Code,
 		arg.Disciplina,
 		arg.Ano,
+		arg.Assunto,
 		arg.Descricao,
 	)
 	return err
 }
 
 const listBnccSkills = `-- name: ListBnccSkills :many
-SELECT id, code, disciplina, ano, descricao FROM bncc_skills
-WHERE ($1::text = '' OR disciplina = $1) AND ($2::text = '' OR ano = $2)
-ORDER BY code
+SELECT id, code, disciplina, ano, descricao, assunto FROM bncc_skills
+WHERE ($1::text = '' OR disciplina = $1)
+  AND ($2::text = '' OR ano = $2)
+  AND ($3::text = '' OR assunto = $3)
+ORDER BY disciplina, ano, code
 `
 
 type ListBnccSkillsParams struct {
 	Column1 string `json:"column_1"`
 	Column2 string `json:"column_2"`
+	Column3 string `json:"column_3"`
 }
 
 func (q *Queries) ListBnccSkills(ctx context.Context, arg ListBnccSkillsParams) ([]BnccSkill, error) {
-	rows, err := q.db.Query(ctx, listBnccSkills, arg.Column1, arg.Column2)
+	rows, err := q.db.Query(ctx, listBnccSkills, arg.Column1, arg.Column2, arg.Column3)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +96,7 @@ func (q *Queries) ListBnccSkills(ctx context.Context, arg ListBnccSkillsParams) 
 			&i.Disciplina,
 			&i.Ano,
 			&i.Descricao,
+			&i.Assunto,
 		); err != nil {
 			return nil, err
 		}

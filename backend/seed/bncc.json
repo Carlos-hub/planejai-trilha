@@ -1,74 +1,117 @@
 [
-  {
-    "code": "EF67LP28",
-    "disciplina": "Língua Portuguesa",
-    "ano": "6º ano",
-    "descricao": "Ler e compreender textos argumentativos identificando tese e argumentos."
-  },
-  {
-    "code": "EF07MA09",
-    "disciplina": "Matemática",
-    "ano": "7º ano",
-    "descricao": "Resolver problemas com números racionais em operações de adição e subtração."
-  },
-  {
-    "code": "EF07MA01",
-    "disciplina": "Matemática",
-    "ano": "7º ano",
-    "descricao": "Utilizar números racionais para explorar operações matemáticas elementares."
-  },
-  {
-    "code": "EF08CI01",
-    "disciplina": "Ciências",
-    "ano": "8º ano",
-    "descricao": "Identificar propriedades comuns e diferenças entre os materiais e seus usos em diferentes contextos."
-  },
-  {
-    "code": "EF08CI08",
-    "disciplina": "Ciências",
-    "ano": "8º ano",
-    "descricao": "Descrever organismos multicelulares e unicelulares identificando diferenças."
-  },
-  {
-    "code": "EF09HI01",
-    "disciplina": "História",
-    "ano": "9º ano",
-    "descricao": "Analisar a industrialização em diferentes regiões do Brasil e suas consequências."
-  },
-  {
-    "code": "EF09HI11",
-    "disciplina": "História",
-    "ano": "9º ano",
-    "descricao": "Identificar as tensões e conflitos do final do século XIX e início do século XX."
-  },
-  {
-    "code": "EF07GE05",
-    "disciplina": "Geografia",
-    "ano": "7º ano",
-    "descricao": "Analisar as mudanças na composição populacional e suas impacções espaciais."
-  },
-  {
-    "code": "EF08GE17",
-    "disciplina": "Geografia",
-    "ano": "8º ano",
-    "descricao": "Compreender as características do espaço agrário e suas transformações."
-  },
-  {
-    "code": "EF06LP51",
-    "disciplina": "Língua Portuguesa",
-    "ano": "6º ano",
-    "descricao": "Compreender textos que circulam em diferentes contextos sociais."
-  },
-  {
-    "code": "EF09MA06",
-    "disciplina": "Matemática",
-    "ano": "9º ano",
-    "descricao": "Compreender noções básicas de proporcionalidade em situações reais."
-  },
-  {
-    "code": "EF07CI03",
-    "disciplina": "Ciências",
-    "ano": "7º ano",
-    "descricao": "Descrever características da radiação solar e seus efeitos."
-  }
+  { "code": "EF01LP01", "disciplina": "Língua Portuguesa", "ano": "1º ano", "assunto": "Leitura", "descricao": "Reconhecer que textos são lidos e escritos da esquerda para a direita e de cima para baixo." },
+  { "code": "EF01LP02", "disciplina": "Língua Portuguesa", "ano": "1º ano", "assunto": "Análise linguística/semiótica", "descricao": "Escrever espontaneamente ou por ditado palavras e frases usando letras do alfabeto." },
+  { "code": "EF01MA01", "disciplina": "Matemática", "ano": "1º ano", "assunto": "Números", "descricao": "Contar de maneira exata ou aproximada elementos de coleções até 100 unidades." },
+  { "code": "EF01MA10", "disciplina": "Matemática", "ano": "1º ano", "assunto": "Geometria", "descricao": "Descrever a localização de pessoas e objetos usando termos como direita, esquerda, em cima e embaixo." },
+  { "code": "EF01CI01", "disciplina": "Ciências", "ano": "1º ano", "assunto": "Matéria e energia", "descricao": "Comparar características de diferentes materiais presentes em objetos de uso cotidiano." },
+  { "code": "EF01HI01", "disciplina": "História", "ano": "1º ano", "assunto": "Mundo pessoal: meu lugar no mundo", "descricao": "Identificar aspectos do seu crescimento e mudanças ao longo do tempo." },
+  { "code": "EF01GE01", "disciplina": "Geografia", "ano": "1º ano", "assunto": "O sujeito e seu lugar no mundo", "descricao": "Descrever características observadas de seus lugares de vivência." },
+
+  { "code": "EF02LP01", "disciplina": "Língua Portuguesa", "ano": "2º ano", "assunto": "Análise linguística/semiótica", "descricao": "Utilizar, ao produzir texto, grafia correta de palavras conhecidas e regularidades ortográficas." },
+  { "code": "EF02LP07", "disciplina": "Língua Portuguesa", "ano": "2º ano", "assunto": "Leitura", "descricao": "Ler e compreender textos curtos, com autonomia crescente, identificando a finalidade." },
+  { "code": "EF02MA01", "disciplina": "Matemática", "ano": "2º ano", "assunto": "Números", "descricao": "Comparar e ordenar números naturais até a ordem de centenas pela compreensão do sistema decimal." },
+  { "code": "EF02MA05", "disciplina": "Matemática", "ano": "2º ano", "assunto": "Álgebra", "descricao": "Construir sequências de números naturais em ordem crescente ou decrescente a partir de um número qualquer." },
+  { "code": "EF02CI04", "disciplina": "Ciências", "ano": "2º ano", "assunto": "Vida e evolução", "descricao": "Descrever características de plantas e animais que fazem parte de seu cotidiano." },
+  { "code": "EF02HI01", "disciplina": "História", "ano": "2º ano", "assunto": "A comunidade e seus registros", "descricao": "Reconhecer espaços de sociabilidade e identificar os motivos que os aproximam de outras pessoas." },
+  { "code": "EF02GE02", "disciplina": "Geografia", "ano": "2º ano", "assunto": "Conexões e escalas", "descricao": "Comparar costumes e tradições de diferentes populações em diferentes lugares." },
+
+  { "code": "EF03LP01", "disciplina": "Língua Portuguesa", "ano": "3º ano", "assunto": "Análise linguística/semiótica", "descricao": "Ler e escrever palavras com correspondências regulares contextuais entre grafemas e fonemas." },
+  { "code": "EF03LP25", "disciplina": "Língua Portuguesa", "ano": "3º ano", "assunto": "Produção de textos", "descricao": "Planejar e produzir narrativas ficcionais com cenário, personagens, conflito e desfecho." },
+  { "code": "EF03MA01", "disciplina": "Matemática", "ano": "3º ano", "assunto": "Números", "descricao": "Ler, escrever e comparar números naturais de até quatro ordens." },
+  { "code": "EF03MA08", "disciplina": "Matemática", "ano": "3º ano", "assunto": "Números", "descricao": "Resolver e elaborar problemas de adição e subtração com significados de juntar, acrescentar e comparar." },
+  { "code": "EF03CI04", "disciplina": "Ciências", "ano": "3º ano", "assunto": "Vida e evolução", "descricao": "Identificar características sobre o modo de vida dos animais mais comuns no ambiente próximo." },
+  { "code": "EF03HI01", "disciplina": "História", "ano": "3º ano", "assunto": "As pessoas e os grupos que compõem a cidade", "descricao": "Identificar os grupos populacionais que formam a cidade e o município." },
+  { "code": "EF03GE03", "disciplina": "Geografia", "ano": "3º ano", "assunto": "Mundo do trabalho", "descricao": "Reconhecer os diferentes modos de vida e trabalho no campo e na cidade." },
+
+  { "code": "EF04LP03", "disciplina": "Língua Portuguesa", "ano": "4º ano", "assunto": "Análise linguística/semiótica", "descricao": "Localizar palavras no dicionário e compreender o funcionamento desse gênero." },
+  { "code": "EF04LP11", "disciplina": "Língua Portuguesa", "ano": "4º ano", "assunto": "Leitura", "descricao": "Ler e compreender textos expositivos identificando informações principais e secundárias." },
+  { "code": "EF04MA02", "disciplina": "Matemática", "ano": "4º ano", "assunto": "Números", "descricao": "Mostrar por decomposição a compreensão do valor posicional dos algarismos em números naturais." },
+  { "code": "EF04MA20", "disciplina": "Matemática", "ano": "4º ano", "assunto": "Grandezas e medidas", "descricao": "Medir e estimar comprimentos, massas e capacidades utilizando unidades de medida padronizadas." },
+  { "code": "EF04CI02", "disciplina": "Ciências", "ano": "4º ano", "assunto": "Matéria e energia", "descricao": "Testar e relatar transformações nos materiais do dia a dia quando expostos a diferentes condições." },
+  { "code": "EF04HI03", "disciplina": "História", "ano": "4º ano", "assunto": "Circulação de pessoas e transformações", "descricao": "Identificar transformações ocorridas na cidade ao longo do tempo e discutir suas implicações." },
+  { "code": "EF04GE01", "disciplina": "Geografia", "ano": "4º ano", "assunto": "O sujeito e seu lugar no mundo", "descricao": "Selecionar em fontes variadas aspectos da vida em sociedade em diferentes lugares." },
+
+  { "code": "EF05LP09", "disciplina": "Língua Portuguesa", "ano": "5º ano", "assunto": "Leitura", "descricao": "Ler e compreender textos argumentativos, distinguindo fatos de opiniões." },
+  { "code": "EF05LP24", "disciplina": "Língua Portuguesa", "ano": "5º ano", "assunto": "Produção de textos", "descricao": "Planejar e produzir textos de opinião com apresentação de ponto de vista e argumentos." },
+  { "code": "EF05MA01", "disciplina": "Matemática", "ano": "5º ano", "assunto": "Números", "descricao": "Ler, escrever e ordenar números naturais até a ordem das centenas de milhar." },
+  { "code": "EF05MA07", "disciplina": "Matemática", "ano": "5º ano", "assunto": "Números", "descricao": "Resolver problemas de adição e subtração com números racionais na representação decimal." },
+  { "code": "EF05MA19", "disciplina": "Matemática", "ano": "5º ano", "assunto": "Grandezas e medidas", "descricao": "Resolver problemas envolvendo variação de proporcionalidade entre grandezas." },
+  { "code": "EF05CI02", "disciplina": "Ciências", "ano": "5º ano", "assunto": "Matéria e energia", "descricao": "Aplicar os conhecimentos sobre mistura e separação de materiais em situações do cotidiano." },
+  { "code": "EF05HI01", "disciplina": "História", "ano": "5º ano", "assunto": "Povos e culturas", "descricao": "Identificar processos de formação das culturas e dos povos relacionando-os ao espaço geográfico." },
+  { "code": "EF05GE02", "disciplina": "Geografia", "ano": "5º ano", "assunto": "Conexões e escalas", "descricao": "Identificar diferenças étnico-culturais e desigualdades sociais em diferentes espaços." },
+
+  { "code": "EF06LP03", "disciplina": "Língua Portuguesa", "ano": "6º ano", "assunto": "Leitura", "descricao": "Analisar informações e argumentos presentes em textos jornalísticos e de divulgação científica." },
+  { "code": "EF06LP05", "disciplina": "Língua Portuguesa", "ano": "6º ano", "assunto": "Análise linguística/semiótica", "descricao": "Identificar em textos e usar na produção classes de palavras e suas funções." },
+  { "code": "EF06MA01", "disciplina": "Matemática", "ano": "6º ano", "assunto": "Números", "descricao": "Comparar, ordenar e representar números naturais e racionais na reta numérica." },
+  { "code": "EF06MA13", "disciplina": "Matemática", "ano": "6º ano", "assunto": "Álgebra", "descricao": "Resolver e elaborar problemas que envolvam a partilha de uma quantidade em partes desiguais." },
+  { "code": "EF06MA24", "disciplina": "Matemática", "ano": "6º ano", "assunto": "Geometria", "descricao": "Resolver problemas com ângulos, inclusive usando transferidor para medições." },
+  { "code": "EF06CI05", "disciplina": "Ciências", "ano": "6º ano", "assunto": "Vida e evolução", "descricao": "Explicar a organização básica das células e seu papel como unidade estrutural dos seres vivos." },
+  { "code": "EF06HI01", "disciplina": "História", "ano": "6º ano", "assunto": "História: tempo, espaço e formas de registro", "descricao": "Identificar diferentes formas de compreensão da noção de tempo e de periodização." },
+  { "code": "EF06GE01", "disciplina": "Geografia", "ano": "6º ano", "assunto": "O sujeito e seu lugar no mundo", "descricao": "Comparar modificações das paisagens nos lugares de vivência e os usos desses lugares." },
+  { "code": "EF06LI01", "disciplina": "Língua Inglesa", "ano": "6º ano", "assunto": "Oralidade", "descricao": "Interagir em situações de intercâmbio oral usando expressões de cumprimento e apresentação." },
+  { "code": "EF69AR01", "disciplina": "Arte", "ano": "6º ano", "assunto": "Artes visuais", "descricao": "Pesquisar e analisar formas distintas das artes visuais tradicionais e contemporâneas." },
+  { "code": "EF67EF01", "disciplina": "Educação Física", "ano": "6º ano", "assunto": "Esportes", "descricao": "Experimentar e fruir esportes de marca, precisão, invasão e rede, valorizando o trabalho coletivo." },
+
+  { "code": "EF07LP04", "disciplina": "Língua Portuguesa", "ano": "7º ano", "assunto": "Leitura", "descricao": "Distinguir fatos de opiniões e identificar a tese e os argumentos em textos argumentativos." },
+  { "code": "EF07LP12", "disciplina": "Língua Portuguesa", "ano": "7º ano", "assunto": "Produção de textos", "descricao": "Produzir textos jornalísticos e de opinião respeitando a estrutura do gênero." },
+  { "code": "EF07MA04", "disciplina": "Matemática", "ano": "7º ano", "assunto": "Números", "descricao": "Resolver problemas com números racionais em suas representações fracionária e decimal." },
+  { "code": "EF07MA13", "disciplina": "Matemática", "ano": "7º ano", "assunto": "Álgebra", "descricao": "Compreender a ideia de variável representada por letra ou símbolo para expressar relações." },
+  { "code": "EF07MA24", "disciplina": "Matemática", "ano": "7º ano", "assunto": "Geometria", "descricao": "Construir triângulos e reconhecer condições de existência e propriedades de seus ângulos." },
+  { "code": "EF07CI08", "disciplina": "Ciências", "ano": "7º ano", "assunto": "Terra e Universo", "descricao": "Descrever o ciclo da água relacionando-o a fenômenos naturais que interferem nesse ciclo." },
+  { "code": "EF07HI01", "disciplina": "História", "ano": "7º ano", "assunto": "O mundo moderno e a conexão entre sociedades", "descricao": "Explicar o significado de 'modernidade' e suas lógicas de inclusão e exclusão." },
+  { "code": "EF07GE05", "disciplina": "Geografia", "ano": "7º ano", "assunto": "Conexões e escalas", "descricao": "Analisar a influência dos fluxos econômicos e populacionais na formação socioeconômica do Brasil." },
+  { "code": "EF07LI06", "disciplina": "Língua Inglesa", "ano": "7º ano", "assunto": "Leitura", "descricao": "Antecipar o sentido global de textos em inglês por inferências com base em pistas textuais." },
+
+  { "code": "EF08LP01", "disciplina": "Língua Portuguesa", "ano": "8º ano", "assunto": "Leitura", "descricao": "Identificar e comparar posicionamentos de autores em textos que abordam o mesmo tema." },
+  { "code": "EF08LP15", "disciplina": "Língua Portuguesa", "ano": "8º ano", "assunto": "Produção de textos", "descricao": "Produzir artigos de opinião defendendo ponto de vista com argumentos consistentes." },
+  { "code": "EF08MA06", "disciplina": "Matemática", "ano": "8º ano", "assunto": "Números", "descricao": "Resolver problemas que envolvam cálculo de porcentagens e acréscimos e decréscimos simples." },
+  { "code": "EF08MA09", "disciplina": "Matemática", "ano": "8º ano", "assunto": "Álgebra", "descricao": "Resolver e elaborar problemas por meio de equações do 1º grau e sistemas de equações." },
+  { "code": "EF08MA17", "disciplina": "Matemática", "ano": "8º ano", "assunto": "Geometria", "descricao": "Aplicar os conceitos de mediatriz e bissetriz na resolução de problemas geométricos." },
+  { "code": "EF08CI01", "disciplina": "Ciências", "ano": "8º ano", "assunto": "Matéria e energia", "descricao": "Identificar e classificar fontes, usos e transformações da energia em diferentes situações." },
+  { "code": "EF08HI03", "disciplina": "História", "ano": "8º ano", "assunto": "Revoluções e Estados nacionais", "descricao": "Analisar os impactos das revoluções liberais e industriais na organização das sociedades." },
+  { "code": "EF08GE01", "disciplina": "Geografia", "ano": "8º ano", "assunto": "O sujeito e seu lugar no mundo", "descricao": "Descrever as rotas de dispersão da população humana e os fluxos migratórios recentes." },
+  { "code": "EF08LI02", "disciplina": "Língua Inglesa", "ano": "8º ano", "assunto": "Oralidade", "descricao": "Explorar o uso de recursos linguísticos para negociar significados em interações orais." },
+
+  { "code": "EF09LP03", "disciplina": "Língua Portuguesa", "ano": "9º ano", "assunto": "Leitura", "descricao": "Analisar o efeito de sentido produzido pelo uso de recursos argumentativos e retóricos." },
+  { "code": "EF09LP08", "disciplina": "Língua Portuguesa", "ano": "9º ano", "assunto": "Análise linguística/semiótica", "descricao": "Identificar mecanismos de coesão e progressão temática na leitura e produção de textos." },
+  { "code": "EF09MA05", "disciplina": "Matemática", "ano": "9º ano", "assunto": "Números", "descricao": "Resolver e elaborar problemas com porcentagens, incluindo juros simples e composto." },
+  { "code": "EF09MA09", "disciplina": "Matemática", "ano": "9º ano", "assunto": "Álgebra", "descricao": "Compreender os processos de resolução de equações do 2º grau por fatoração e por fórmula." },
+  { "code": "EF09MA14", "disciplina": "Matemática", "ano": "9º ano", "assunto": "Geometria", "descricao": "Resolver problemas de aplicação do teorema de Pitágoras e das relações métricas no triângulo." },
+  { "code": "EF09CI02", "disciplina": "Ciências", "ano": "9º ano", "assunto": "Matéria e energia", "descricao": "Comparar quantidades de reagentes e produtos e relacioná-las às leis das reações químicas." },
+  { "code": "EF09HI04", "disciplina": "História", "ano": "9º ano", "assunto": "O nascimento da República no Brasil", "descricao": "Discutir a importância da participação popular e dos movimentos sociais no Brasil republicano." },
+  { "code": "EF09GE02", "disciplina": "Geografia", "ano": "9º ano", "assunto": "Conexões e escalas", "descricao": "Analisar a atuação das corporações e organismos internacionais na ordem econômica mundial." },
+  { "code": "EF09LI05", "disciplina": "Língua Inglesa", "ano": "9º ano", "assunto": "Escrita", "descricao": "Elaborar textos em inglês adequando forma e conteúdo à finalidade e ao interlocutor." },
+
+  { "code": "EM13LP01", "disciplina": "Língua Portuguesa", "ano": "1ª série EM", "assunto": "Leitura", "descricao": "Relacionar o texto a seu contexto de produção e circulação para analisar sentidos e intenções." },
+  { "code": "EM13LP15", "disciplina": "Língua Portuguesa", "ano": "1ª série EM", "assunto": "Produção de textos", "descricao": "Planejar e produzir textos analíticos e argumentativos considerando o gênero e a situação." },
+  { "code": "EM13MAT101", "disciplina": "Matemática", "ano": "1ª série EM", "assunto": "Números e Álgebra", "descricao": "Interpretar situações econômicas e sociais usando taxas de variação e proporcionalidade." },
+  { "code": "EM13MAT302", "disciplina": "Matemática", "ano": "1ª série EM", "assunto": "Geometria e Medidas", "descricao": "Resolver problemas com figuras geométricas planas usando relações métricas e trigonométricas." },
+  { "code": "EM13CNT101", "disciplina": "Física", "ano": "1ª série EM", "assunto": "Matéria e energia", "descricao": "Analisar fenômenos naturais e processos tecnológicos com base nas relações entre matéria e energia." },
+  { "code": "EM13CNT205", "disciplina": "Química", "ano": "1ª série EM", "assunto": "Matéria e energia", "descricao": "Interpretar transformações químicas e seus aspectos energéticos em situações do cotidiano." },
+  { "code": "EM13CNT201", "disciplina": "Biologia", "ano": "1ª série EM", "assunto": "Vida e evolução", "descricao": "Analisar processos vitais e a organização dos seres vivos em diferentes níveis." },
+  { "code": "EM13CHS101", "disciplina": "História", "ano": "1ª série EM", "assunto": "Tempo, espaço e história", "descricao": "Identificar e comparar diferentes matrizes e concepções de tempo em processos históricos." },
+  { "code": "EM13CHS201", "disciplina": "Geografia", "ano": "1ª série EM", "assunto": "Territórios e fronteiras", "descricao": "Analisar as relações entre sociedade e natureza na produção e transformação dos territórios." },
+  { "code": "EM13LGG101", "disciplina": "Língua Inglesa", "ano": "1ª série EM", "assunto": "Linguagens e interação", "descricao": "Compreender e usar línguas para participar de práticas de linguagem em diferentes contextos." },
+
+  { "code": "EM13LP06", "disciplina": "Língua Portuguesa", "ano": "2ª série EM", "assunto": "Análise linguística", "descricao": "Analisar efeitos de sentido decorrentes de escolhas de variedades e registros linguísticos." },
+  { "code": "EM13LP22", "disciplina": "Língua Portuguesa", "ano": "2ª série EM", "assunto": "Leitura", "descricao": "Analisar obras literárias representativas para reconhecer estéticas e contextos de produção." },
+  { "code": "EM13MAT203", "disciplina": "Matemática", "ano": "2ª série EM", "assunto": "Números e Álgebra", "descricao": "Aplicar conceitos de funções afim, quadrática e exponencial na modelagem de situações." },
+  { "code": "EM13MAT406", "disciplina": "Matemática", "ano": "2ª série EM", "assunto": "Estatística e Probabilidade", "descricao": "Construir e interpretar tabelas e gráficos para analisar conjuntos de dados." },
+  { "code": "EM13CNT301", "disciplina": "Física", "ano": "2ª série EM", "assunto": "Terra e Universo", "descricao": "Construir e analisar modelos explicativos para fenômenos físicos e astronômicos." },
+  { "code": "EM13CNT206", "disciplina": "Química", "ano": "2ª série EM", "assunto": "Matéria e energia", "descricao": "Avaliar impactos ambientais da produção e uso de materiais e propor alternativas sustentáveis." },
+  { "code": "EM13CNT207", "disciplina": "Biologia", "ano": "2ª série EM", "assunto": "Vida e evolução", "descricao": "Identificar interações entre organismos e ambiente e discutir a manutenção da biodiversidade." },
+  { "code": "EM13CHS205", "disciplina": "História", "ano": "2ª série EM", "assunto": "Poder, Estado e cidadania", "descricao": "Analisar a formação de diferentes países e movimentos sociais na luta por direitos." },
+  { "code": "EM13CHS106", "disciplina": "Geografia", "ano": "2ª série EM", "assunto": "Natureza e sociedade", "descricao": "Analisar dinâmicas territoriais decorrentes de processos econômicos e ambientais globais." },
+  { "code": "EM13CHS502", "disciplina": "Sociologia", "ano": "2ª série EM", "assunto": "Cidadania e direitos", "descricao": "Analisar processos de disputa por direitos e reconhecimento de grupos sociais." },
+
+  { "code": "EM13LP44", "disciplina": "Língua Portuguesa", "ano": "3ª série EM", "assunto": "Produção de textos", "descricao": "Produzir textos de estilo argumentativo, como o dissertativo-argumentativo do Enem." },
+  { "code": "EM13LP28", "disciplina": "Língua Portuguesa", "ano": "3ª série EM", "assunto": "Oralidade", "descricao": "Planejar e realizar apresentações orais adequando linguagem e recursos ao público." },
+  { "code": "EM13MAT315", "disciplina": "Matemática", "ano": "3ª série EM", "assunto": "Geometria e Medidas", "descricao": "Resolver problemas de geometria analítica, como distância entre pontos e equação da reta." },
+  { "code": "EM13MAT407", "disciplina": "Matemática", "ano": "3ª série EM", "assunto": "Estatística e Probabilidade", "descricao": "Interpretar e comparar medidas de probabilidade em situações de tomada de decisão." },
+  { "code": "EM13CNT302", "disciplina": "Física", "ano": "3ª série EM", "assunto": "Matéria e energia", "descricao": "Comunicar e avaliar aplicações de energia elétrica e eletromagnetismo em tecnologias." },
+  { "code": "EM13CNT303", "disciplina": "Química", "ano": "3ª série EM", "assunto": "Matéria e energia", "descricao": "Interpretar cadeias e ciclos químicos relacionando-os a processos industriais e ambientais." },
+  { "code": "EM13CNT204", "disciplina": "Biologia", "ano": "3ª série EM", "assunto": "Vida e evolução", "descricao": "Elaborar explicações sobre hereditariedade e evolução com base em modelos científicos." },
+  { "code": "EM13CHS301", "disciplina": "História", "ano": "3ª série EM", "assunto": "Mundo contemporâneo", "descricao": "Problematizar hábitos e práticas do mundo contemporâneo a partir de processos históricos." },
+  { "code": "EM13CHS306", "disciplina": "Geografia", "ano": "3ª série EM", "assunto": "Globalização e trabalho", "descricao": "Analisar a globalização e seus efeitos sobre o trabalho, o consumo e o meio ambiente." },
+  { "code": "EM13CHS603", "disciplina": "Filosofia", "ano": "3ª série EM", "assunto": "Ética e política", "descricao": "Analisar concepções de ética e justiça para fundamentar posições sobre questões contemporâneas." }
 ]

@@ -12,6 +12,7 @@ type bnccSkillResponse struct {
 	Code       string `json:"code"`
 	Disciplina string `json:"disciplina"`
 	Ano        string `json:"ano"`
+	Assunto    string `json:"assunto"`
 	Descricao  string `json:"descricao"`
 }
 
@@ -21,6 +22,7 @@ func toBnccSkillResponse(s store.BnccSkill) bnccSkillResponse {
 		Code:       s.Code,
 		Disciplina: s.Disciplina,
 		Ano:        s.Ano,
+		Assunto:    s.Assunto,
 		Descricao:  s.Descricao,
 	}
 }
@@ -32,6 +34,7 @@ func (d Deps) listBnccSkills(w http.ResponseWriter, r *http.Request) {
 	skills, err := d.Store.ListBnccSkills(r.Context(), store.ListBnccSkillsParams{
 		Column1: r.URL.Query().Get("disciplina"),
 		Column2: r.URL.Query().Get("ano"),
+		Column3: r.URL.Query().Get("assunto"),
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao listar habilidades BNCC"})

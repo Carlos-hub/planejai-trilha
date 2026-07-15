@@ -22,6 +22,7 @@ type BnccSkill struct {
 	Disciplina string `json:"disciplina"`
 	Ano        string `json:"ano"`
 	Descricao  string `json:"descricao"`
+	Assunto    string `json:"assunto"`
 }
 
 type LessonPlan struct {
