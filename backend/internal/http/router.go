@@ -38,6 +38,8 @@ func NewRouter(d Deps) http.Handler {
 		r.Get("/t/{code}/export.pdf", d.exportTrailPDF)
 		r.Post("/t/{code}/attempt", d.startAttempt)
 		r.Post("/attempts/{id}/answers", d.submitAnswers)
+		r.Post("/student/login", d.studentLogin)
+		r.Post("/student/logout", d.studentLogout)
 		r.Group(func(r chi.Router) {
 			r.Use(d.RequireAuth)
 			r.Get("/me", d.me)
