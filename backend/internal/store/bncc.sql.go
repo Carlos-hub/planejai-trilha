@@ -21,7 +21,7 @@ func (q *Queries) CountBnccSkills(ctx context.Context) (int64, error) {
 }
 
 const getBnccSkill = `-- name: GetBnccSkill :one
-SELECT id, code, disciplina, ano, descricao, assunto FROM bncc_skills WHERE id = $1
+SELECT id, code, disciplina, descricao, assunto, etapa, anos FROM bncc_skills WHERE id = $1
 `
 
 func (q *Queries) GetBnccSkill(ctx context.Context, id int64) (BnccSkill, error) {
@@ -31,36 +31,40 @@ func (q *Queries) GetBnccSkill(ctx context.Context, id int64) (BnccSkill, error)
 		&i.ID,
 		&i.Code,
 		&i.Disciplina,
-		&i.Ano,
 		&i.Descricao,
 		&i.Assunto,
+		&i.Etapa,
+		&i.Anos,
 	)
 	return i, err
 }
 
 const insertBnccSkill = `-- name: InsertBnccSkill :exec
-INSERT INTO bncc_skills (code, disciplina, ano, assunto, descricao)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO bncc_skills (code, etapa, disciplina, anos, assunto, descricao)
+VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (code) DO UPDATE SET
+  etapa = EXCLUDED.etapa,
   disciplina = EXCLUDED.disciplina,
-  ano = EXCLUDED.ano,
+  anos = EXCLUDED.anos,
   assunto = EXCLUDED.assunto,
   descricao = EXCLUDED.descricao
 `
 
 type InsertBnccSkillParams struct {
-	Code       string `json:"code"`
-	Disciplina string `json:"disciplina"`
-	Ano        string `json:"ano"`
-	Assunto    string `json:"assunto"`
-	Descricao  string `json:"descricao"`
+	Code       string  `json:"code"`
+	Etapa      string  `json:"etapa"`
+	Disciplina string  `json:"disciplina"`
+	Anos       []int32 `json:"anos"`
+	Assunto    string  `json:"assunto"`
+	Descricao  string  `json:"descricao"`
 }
 
 func (q *Queries) InsertBnccSkill(ctx context.Context, arg InsertBnccSkillParams) error {
 	_, err := q.db.Exec(ctx, insertBnccSkill,
 		arg.Code,
+		arg.Etapa,
 		arg.Disciplina,
-		arg.Ano,
+		arg.Anos,
 		arg.Assunto,
 		arg.Descricao,
 	)
@@ -68,21 +72,27 @@ func (q *Queries) InsertBnccSkill(ctx context.Context, arg InsertBnccSkillParams
 }
 
 const listBnccSkills = `-- name: ListBnccSkills :many
-SELECT id, code, disciplina, ano, descricao, assunto FROM bncc_skills
-WHERE ($1::text = '' OR disciplina = $1)
-  AND ($2::text = '' OR ano = $2)
-  AND ($3::text = '' OR assunto = $3)
-ORDER BY disciplina, ano, code
+SELECT id, code, disciplina, descricao, assunto, etapa, anos FROM bncc_skills
+WHERE ($1::text = '' OR etapa = $1)
+  AND ($2::text = '' OR disciplina = $2)
+  AND (
+    $3::text = ''
+    OR code ILIKE '%' || $3 || '%'
+    OR disciplina ILIKE '%' || $3 || '%'
+    OR assunto ILIKE '%' || $3 || '%'
+    OR descricao ILIKE '%' || $3 || '%'
+  )
+ORDER BY etapa, disciplina, code
 `
 
 type ListBnccSkillsParams struct {
-	Column1 string `json:"column_1"`
-	Column2 string `json:"column_2"`
-	Column3 string `json:"column_3"`
+	Etapa      string `json:"etapa"`
+	Disciplina string `json:"disciplina"`
+	Q          string `json:"q"`
 }
 
 func (q *Queries) ListBnccSkills(ctx context.Context, arg ListBnccSkillsParams) ([]BnccSkill, error) {
-	rows, err := q.db.Query(ctx, listBnccSkills, arg.Column1, arg.Column2, arg.Column3)
+	rows, err := q.db.Query(ctx, listBnccSkills, arg.Etapa, arg.Disciplina, arg.Q)
 	if err != nil {
 		return nil, err
 	}
@@ -94,9 +104,10 @@ func (q *Queries) ListBnccSkills(ctx context.Context, arg ListBnccSkillsParams) 
 			&i.ID,
 			&i.Code,
 			&i.Disciplina,
-			&i.Ano,
 			&i.Descricao,
 			&i.Assunto,
+			&i.Etapa,
+			&i.Anos,
 		); err != nil {
 			return nil, err
 		}

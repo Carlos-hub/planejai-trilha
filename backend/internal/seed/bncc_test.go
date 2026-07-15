@@ -12,10 +12,11 @@ func TestBnccJSONParses(t *testing.T) {
 		t.Fatal(err)
 	}
 	var items []struct {
-		Code       string `json:"code"`
-		Disciplina string `json:"disciplina"`
-		Ano        string `json:"ano"`
-		Descricao  string `json:"descricao"`
+		Code       string  `json:"code"`
+		Etapa      string  `json:"etapa"`
+		Disciplina string  `json:"disciplina"`
+		Anos       []int32 `json:"anos"`
+		Descricao  string  `json:"descricao"`
 	}
 	if err := json.Unmarshal(b, &items); err != nil {
 		t.Fatal(err)
@@ -24,8 +25,8 @@ func TestBnccJSONParses(t *testing.T) {
 		t.Fatalf("want >=10 skills got %d", len(items))
 	}
 	for _, it := range items {
-		if it.Code == "" || it.Disciplina == "" || it.Ano == "" || it.Descricao == "" {
-			t.Fatalf("empty field in %+v", it)
+		if it.Code == "" || it.Etapa == "" || it.Disciplina == "" || len(it.Anos) == 0 || it.Descricao == "" {
+			t.Fatalf("incomplete field in %+v", it)
 		}
 	}
 }

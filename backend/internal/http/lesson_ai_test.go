@@ -30,7 +30,8 @@ func testBnccSkill(t *testing.T, d Deps) int64 {
 	if err := d.Store.InsertBnccSkill(ctx, store.InsertBnccSkillParams{
 		Code:       "TEST01",
 		Disciplina: "Matemática",
-		Ano:        "5",
+		Etapa:      "EF",
+		Anos:       []int32{5},
 		Descricao:  "Habilidade de teste",
 	}); err != nil {
 		t.Fatal(err)

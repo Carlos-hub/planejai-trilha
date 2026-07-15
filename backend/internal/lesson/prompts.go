@@ -52,7 +52,7 @@ Descrição da habilidade: %s
 
 Duração da aula: %d minutos
 
-Gere o plano de aula, uma atividade prática e uma trilha de aprendizagem (com tópicos e um quiz de fixação), seguindo rigorosamente o esquema JSON definido.`, skill.Code, skill.Disciplina, skill.Ano, skill.Descricao, duracaoMin)
+Gere o plano de aula, uma atividade prática e uma trilha de aprendizagem (com tópicos e um quiz de fixação), seguindo rigorosamente o esquema JSON definido.`, skill.Code, skill.Disciplina, skill.AnoLabel(), skill.Descricao, duracaoMin)
 }
 
 // enhanceUserPrompt builds the user prompt for enhancing an existing draft
@@ -68,5 +68,5 @@ Descrição da habilidade: %s
 Rascunho atual (JSON):
 %s
 
-Responda com o JSON completo e aprimorado, seguindo rigorosamente o mesmo esquema.`, skill.Code, skill.Disciplina, skill.Ano, skill.Descricao, draftJSON)
+Responda com o JSON completo e aprimorado, seguindo rigorosamente o mesmo esquema.`, skill.Code, skill.Disciplina, skill.AnoLabel(), skill.Descricao, draftJSON)
 }

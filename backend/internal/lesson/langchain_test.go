@@ -25,7 +25,8 @@ func TestLangChainGeneratorGenerate(t *testing.T) {
 		ID:         1,
 		Code:       "EF01LP01",
 		Disciplina: "Português",
-		Ano:        "1º ano",
+		Etapa:      "EF",
+		Anos:       []int32{1},
 		Descricao:  "Reconhecer a função social de textos que circulam em campos da vida social dos quais participa cotidianamente",
 	}
 
