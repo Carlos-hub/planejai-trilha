@@ -26,6 +26,7 @@ Permitir que o professor:
 - Notas/pesos por tipo de atividade (tarefa / tema de casa / prova) → Subsistema C.
 - Geração de PDF de prova + QRCode (gabarito / submissão) → Subsistema C.
 - Entidade Escola, papel Admin, tokens de IA por escola/professor, seleção de provider (Gemini/Claude/GPT/Llama/Deepseek) → Subsistema B.
+  - **Requisito de segurança já fixado para B (não perder):** os tokens/credenciais de acesso à IA são **obrigatoriamente criptografados em repouso** pelo backend Go. Em caso de vazamento do banco, o token permanece protegido. Diretrizes: cifra simétrica autenticada (ex.: AES-256-GCM); chave-mestra vem de env/KMS, **nunca** armazenada no banco; persistir apenas ciphertext + nonce; plaintext do token nunca é logado nem retornado em GET (apenas write-only / mascarado na UI).
 - Auto-cadastro de aluno / add avulso de aluno (só import CSV nesta entrega).
 
 ---

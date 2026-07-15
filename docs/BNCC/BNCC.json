@@ -1,0 +1,265 @@
+{
+  "name": "Etapas",
+  "elements": [
+    {
+      "name": "Educação Infantil",
+      "elements": [
+        {
+          "name": "Campos de experiências",
+          "elements": [
+            {
+              "name": "O eu, o outros e o nós",
+              "elements": [
+                {
+                  "name": "Crianças de zero a 1 ano e 6 meses",
+                  "elements": [
+                    {
+                      "name": "Objetivos de aprendizagem e desenvolvimento",
+                      "elements": [
+                        {
+                          "name": "EI01EO01",
+                          "description": "Perceber que suas ações têm efeitos nas outras crianças e nos adultos."
+                        },
+                        {
+                          "name": "EI01EO02",
+                          "description": "Perceber as possibilidades e os limites de seu corpo nas brincadeiras e interações das quais participa."
+                        },
+                        {
+                          "name": "EI01EO03",
+                          "description": "Interagir com crianças da mesma faixa etária e adultos ao explorar materiais, objetos, brinquedos."
+                        },
+                        {
+                          "name": "EI01EO04",
+                          "description": "Comunicar necessidades, desejos e emoções, utilizando gestos, balbucios, palavras."
+                        },
+                        {
+                          "name": "EI01EO05",
+                          "description": "Reconhecer as sensações de seu corpo em momentos de alimentação, higiene, brincadeira e descanso."
+                        },
+                        {
+                          "name": "EI01EO06",
+                          "description": "Construir formas de interação com outras crianças da mesma faixa etária e adultos, adaptando-se ao convívio social."
+                        },
+                        {
+                          "name": "EI01EO07",
+                          "description": "Demonstrar sentimentos de afeição pelas pessoas com as quais interage."
+                        },
+                        {
+                          "name": "EI01EO08",
+                          "description": "Desenvolver confiança em si, em seus pares e nos adultos em situações de interação."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Crianças de 1 ano e 7 meses a 3 anos e 11 meses",
+                  "elements": [
+                    {
+                      "name": "Objetivos de aprendizagem e desenvolvimento",
+                      "elements": [
+                        {
+                          "name": "EI02EO01",
+                          "description": "Demonstrar atitudes de cuidado e solidariedade na interação com crianças e adultos."
+                        },
+                        {
+                          "name": "EI02EO02",
+                          "description": "Demonstrar imagem positiva de si e confiança em sua capacidade para enfrentar dificuldades e desafios."
+                        },
+                        {
+                          "name": "EI02EO03",
+                          "description": "Compartilhar os objetos e os espaços com crianças da mesma faixa etária e adultos."
+                        },
+                        {
+                          "name": "EI02EO04",
+                          "description": "Comunicar-se com os colegas e os adultos, buscando compreendê-los e fazendo-se compreender"
+                        },
+                        {
+                          "name": "EI02EO05",
+                          "description": "Habituar-se a práticas de cuidado com o corpo, desenvolvendo noções de bem-estar."
+                        },
+                        {
+                          "name": "EI02EO06",
+                          "description": "Respeitar regras básicas de convívio social nas interações e brincadeiras."
+                        },
+                        {
+                          "name": "EI02EO07",
+                          "description": "Valorizar a diversidade ao participar de situações de convívio com diferenças."
+                        },
+                        {
+                          "name": "EI02EO08",
+                          "description": "Resolver conflitos nas interações e brincadeiras, com a orientação de um adulto."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Crianças de 4 anos a 5 anos e 11 meses",
+                  "elements": [
+                    {
+                      "name": "Objetivos de aprendizagem e desenvolvimento",
+                      "elements": [
+                        {
+                          "name": "EI03EO01",
+                          "description": "Demonstrar empatia pelos outros, percebendo que as pessoas têm diferentes sentimentos, necessidades e maneiras de pensar e agir"
+                        },
+                        {
+                          "name": "EI03EO02",
+                          "description": "Atuar de maneira independente, com confiança em suas capacidades, reconhecendo suas conquistas e limitações."
+                        },
+                        {
+                          "name": "EI03EO03",
+                          "description": "Ampliar as relações interpessoais, desenvolvendo atitudes de participação e cooperação."
+                        },
+                        {
+                          "name": "EI03EO04",
+                          "description": "Comunicar suas ideias e sentimentos com desenvoltura a pessoas e grupos diversos."
+                        },
+                        {
+                          "name": "EI03EO05",
+                          "description": "Adotar hábitos de autocuidado, valorizando atitudes relacionadas a higiene, alimentação, conforto e cuidados com a aparência."
+                        },
+                        {
+                          "name": "EI03EO06",
+                          "description": "Compreender a necessidade das regras no convívio social, nas brincadeiras e nos jogos com outras crianças."
+                        },
+                        {
+                          "name": "EI03EO07",
+                          "description": "Manifestar oposição a qualquer forma de discriminação."
+                        },
+                        {
+                          "name": "EI03EO08",
+                          "description": "Usar estratégias pautadas no respeito mútuo para lidar com conflitos nas interações com crianças e adultos."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Corpo, gestos e movimentos",
+              "elements":[
+                {
+                  "name":"Crianças de zero a 1 ano e 6 meses",
+                  "elements":[
+                    {
+                      "name":"Objetivos de aprendizagem e desenvolvimento",
+                      "elements":[
+                        {
+                          "name": "EI01CG01",
+                          "description": "Movimentar as partes do corpo para exprimir corporalmente emoções, necessidades e desejos."
+                        },
+                        {
+                          "name": "EI01CG02",
+                          "description": "Ampliar suas possibilidades de movimento em espaços que possibilitem explorações diferenciadas."
+                        },
+                        {
+                          "name": "EI01CG03",
+                          "description": "Experimentar as possibilidades de seu corpo nas brincadeiras e interações em ambientes acolhedores e desafiantes."
+                        },
+                        {
+                          "name": "EI01CG04",
+                          "description": "Participar do cuidado do seu corpo e da promoção do seu bem-estar."
+                        },
+                        {
+                          "name": "EI01CG05",
+                          "description": "Imitar gestos, sonoridades e movimentos de outras crianças, adultos e animais."
+                        },
+                        {
+                          "name": "EI01CG06",
+                          "description": "Utilizar os movimentos de preensão, encaixe e lançamento, ampliando suas possibilidades de manuseio de diferentes materiais e objetos."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name":"Crianças de 1 ano e 7 meses a 3 anos e 11 meses",
+                  "elements":[
+                    {
+                      "name":"Objetivos de aprendizagem e desenvolvimento",
+                      "elements":[
+                        {
+                          "name": "EI02CG01",
+                          "description": "Apropriar-se de gestos e movimentos de sua cultura no cuidado de si e nos jogos e brincadeiras."
+                        },
+                        {
+                          "name": "EI02CG02",
+                          "description": "Explorar formas de deslocamento no espaço (pular, saltar, dançar), combinando movimentos e seguindo orientações."
+                        },
+                        {
+                          "name": "EI02CG03",
+                          "description": "Fazer uso de suas possibilidades corporais, ao se envolver em brincadeiras e atividades de diferentes naturezas."
+                        },
+                        {
+                          "name": "EI02CG04",
+                          "description": "Demonstrar progressiva independência no cuidado do seu corpo."
+                        },
+                        {
+                          "name": "EI02CG05",
+                          "description": "Deslocar seu corpo no espaço, orientando-se por noções como em frente, atrás, no alto, embaixo, dentro, fora etc."
+                        },
+                        {
+                          "name": "EI02CG06",
+                          "description": "Desenvolver progressivamente as habilidades manuais, adquirindo controle para desenhar, pintar, rasgar, folhear, entre outros."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name":"Crianças de 4 anos a 5 anos e 11 meses",
+                  "elements":[
+                    {
+                      "name":"Objetivos de aprendizagem e desenvolvimento",
+                      "elements":[
+                        {
+                          "name": "EI03CG01",
+                          "description": "Movimentar-se de forma adequada, ao interagir com colegas e adultos em brincadeiras e atividades."
+                        },
+                        {
+                          "name": "EI03CG02",
+                          "description": "Criar movimentos, gestos, olhares, mímicas e sons com o corpo em brincadeiras, jogos e atividades artísticas como dança, teatro e música."
+                        },
+                        {
+                          "name": "EI03CG03",
+                          "description": "Demonstrar controle e adequação do uso de seu corpo em momentos de cuidado, brincadeiras e jogos, escuta e reconto de histórias, atividades artísticas, entre outras possibilidades."
+                        },
+                        {
+                          "name": "EI03CG04",
+                          "description": "Demonstrar valorização das características de seu corpo, nas diversas atividades das quais participa e em momentos de cuidado de si e do outro."
+                        },
+                        {
+                          "name": "EI03CG05",
+                          "description": "Criar com o corpo formas diversificadas de expressão de sentimentos, sensações e emoções, tanto nas situações do cotidiano quanto em brincadeiras, dança, teatro, música."
+                        },
+                        {
+                          "name": "EI03CG06",
+                          "description": "Coordenar com precisão e eficiência suas habilidades motoras no atendimento a seus interesses e necessidades de representação gráfica."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Traços, sons, cores e formas"
+            },
+            {
+              "name": "Oralidade e escrita"
+            },
+            {
+              "name": "Espaços, tempos, quantidades, relações e transformações"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ensino Fundamental"
+    }
+  ]
+}
