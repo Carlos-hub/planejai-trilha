@@ -117,3 +117,58 @@ func TestPatchTurmaPreservesEtapa(t *testing.T) {
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
 
 func timePlus24h() time.Time { return time.Now().Add(24 * time.Hour) }
+
+func TestImportStudents(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "profImport-turma@t.com")
+
+	// create a turma
+	body, _ := json.Marshal(map[string]any{"nome": "6B"})
+	cr := httptest.NewRequest("POST", "/api/turmas", bytes.NewReader(body))
+	cr.AddCookie(cookie)
+	cw := httptest.NewRecorder()
+	r.ServeHTTP(cw, cr)
+	var created struct {
+		ID int64 `json:"id"`
+	}
+	json.Unmarshal(cw.Body.Bytes(), &created)
+
+	csv := "nome,matricula\nAna Clara,1001\nJoão da Silva,1002\n"
+	req := httptest.NewRequest("POST", "/api/turmas/"+itoa(created.ID)+"/students/import", bytes.NewReader([]byte(csv)))
+	req.AddCookie(cookie)
+	req.Header.Set("Content-Type", "text/csv")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("import status = %d body=%s", w.Code, w.Body)
+	}
+	var resp struct {
+		Criados []struct {
+			Nome, Usuario, Senha string
+		} `json:"criados"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if len(resp.Criados) != 2 {
+		t.Fatalf("criados = %d, want 2", len(resp.Criados))
+	}
+	if resp.Criados[0].Senha == "" || resp.Criados[0].Usuario == "" {
+		t.Fatalf("missing generated credentials: %+v", resp.Criados[0])
+	}
+	if resp.Criados[0].Usuario == resp.Criados[1].Usuario {
+		t.Fatalf("usuarios must be unique")
+	}
+
+	// students actually persisted
+	gr := httptest.NewRequest("GET", "/api/turmas/"+itoa(created.ID), nil)
+	gr.AddCookie(cookie)
+	gw := httptest.NewRecorder()
+	r.ServeHTTP(gw, gr)
+	if !bytes.Contains(gw.Body.Bytes(), []byte("Ana Clara")) {
+		t.Fatalf("student not persisted: %s", gw.Body)
+	}
+	// plaintext password must never be in a GET
+	if bytes.Contains(gw.Body.Bytes(), []byte(resp.Criados[0].Senha)) {
+		t.Fatalf("plaintext password leaked in GET")
+	}
+}
