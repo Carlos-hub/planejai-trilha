@@ -8,6 +8,14 @@ export interface Me {
   nome: string;
 }
 
+// --- student auth (student_handlers.go: login) ---
+export interface Student {
+  id: number;
+  nome: string;
+  usuario: string;
+  turma_id: number;
+}
+
 // --- lesson content shared shapes (lesson_handlers.go: lessonResponse.Trilha/Plano) ---
 export interface Topico {
   titulo: string;
