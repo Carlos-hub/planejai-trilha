@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -115,6 +116,98 @@ func TestPatchTurmaPreservesEtapa(t *testing.T) {
 }
 
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
+
+// seedPublishableTrail creates a lesson (with plano+atividade+trilha content,
+// via POST /api/lessons) owned by the professor identified by cookie, so its
+// status becomes "pronto" and a trail row exists ready to publish. Returns
+// the lesson plan id.
+func seedPublishableTrail(t *testing.T, d Deps, cookie *http.Cookie) int64 {
+	t.Helper()
+	r := NewRouter(d)
+	body := `{
+		"duracao": 45,
+		"plano": {"objetivos":"objetivos","metodologia":"metodologia","recursos":"recursos","avaliacao":"avaliacao"},
+		"atividade": "atividade",
+		"trilha": {
+			"topicos": [{"titulo":"Topico 1","resumo":"resumo 1"}],
+			"quiz": {"questoes": [{"enunciado":"Pergunta?","opcoes":["a","b","c"],"correta":1}]}
+		}
+	}`
+	req := httptest.NewRequest("POST", "/api/lessons", strings.NewReader(body))
+	req.AddCookie(cookie)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("seedPublishableTrail: create status = %d body=%s", w.Code, w.Body)
+	}
+	var created lessonResponse
+	if err := json.NewDecoder(w.Body).Decode(&created); err != nil {
+		t.Fatal(err)
+	}
+	return created.ID
+}
+
+func TestPublishWithTurma(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "profPub-turma@t.com")
+
+	// create turma owned by cookie
+	tb, _ := json.Marshal(map[string]any{"nome": "9C"})
+	tr := httptest.NewRequest("POST", "/api/turmas", bytes.NewReader(tb))
+	tr.AddCookie(cookie)
+	tw := httptest.NewRecorder()
+	r.ServeHTTP(tw, tr)
+	var turma struct {
+		ID int64 `json:"id"`
+	}
+	json.Unmarshal(tw.Body.Bytes(), &turma)
+
+	// publishing to a turma owned by another professor → 404
+	other := loginProfessor(t, d, "profOther-turma@t.com")
+	trail := seedPublishableTrail(t, d, other) // helper: creates lesson+trail ready to publish, returns lesson id
+	pb, _ := json.Marshal(map[string]any{"turma_id": turma.ID})
+	pr := httptest.NewRequest("POST", "/api/trails/"+itoa(trail)+"/publish", bytes.NewReader(pb))
+	pr.AddCookie(other)
+	pw := httptest.NewRecorder()
+	r.ServeHTTP(pw, pr)
+	if pw.Code != http.StatusNotFound {
+		t.Fatalf("publish to foreign turma = %d, want 404", pw.Code)
+	}
+
+	// publishing to a turma owned by the caller → 200, and turma_id persisted
+	ownTrail := seedPublishableTrail(t, d, cookie)
+	ob, _ := json.Marshal(map[string]any{"turma_id": turma.ID})
+	or := httptest.NewRequest("POST", "/api/trails/"+itoa(ownTrail)+"/publish", bytes.NewReader(ob))
+	or.AddCookie(cookie)
+	ow := httptest.NewRecorder()
+	r.ServeHTTP(ow, or)
+	if ow.Code != http.StatusOK {
+		t.Fatalf("publish with own turma = %d, want 200, body=%s", ow.Code, ow.Body)
+	}
+	var published publishTrailResponse
+	if err := json.Unmarshal(ow.Body.Bytes(), &published); err != nil {
+		t.Fatal(err)
+	}
+	dbTrail, err := d.Store.GetTrailByCode(context.Background(), &published.Codigo)
+	if err != nil {
+		t.Fatalf("GetTrailByCode: %v", err)
+	}
+	if dbTrail.TurmaID == nil || *dbTrail.TurmaID != turma.ID {
+		t.Fatalf("trail.turma_id = %v, want %d", dbTrail.TurmaID, turma.ID)
+	}
+
+	// unknown turma_id → 404
+	unknownTrail := seedPublishableTrail(t, d, cookie)
+	ub, _ := json.Marshal(map[string]any{"turma_id": int64(999999999)})
+	ur := httptest.NewRequest("POST", "/api/trails/"+itoa(unknownTrail)+"/publish", bytes.NewReader(ub))
+	ur.AddCookie(cookie)
+	uw := httptest.NewRecorder()
+	r.ServeHTTP(uw, ur)
+	if uw.Code != http.StatusNotFound {
+		t.Fatalf("publish with unknown turma = %d, want 404", uw.Code)
+	}
+}
 
 func timePlus24h() time.Time { return time.Now().Add(24 * time.Hour) }
 

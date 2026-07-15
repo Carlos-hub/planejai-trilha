@@ -391,6 +391,20 @@ func (d Deps) publishTrail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
+
+	var body struct {
+		TurmaID *int64 `json:"turma_id"`
+	}
+	// body is optional; ignore decode errors on empty body
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	if body.TurmaID != nil {
+		turma, err := d.Store.GetTurma(ctx, *body.TurmaID)
+		if err != nil || turma.UserID != userID {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "turma não encontrada"})
+			return
+		}
+	}
+
 	trail, err := d.Store.GetTrailByLesson(ctx, lp.ID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -421,6 +435,13 @@ func (d Deps) publishTrail(w http.ResponseWriter, r *http.Request) {
 	if codigo == "" {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "não foi possível gerar um código único"})
 		return
+	}
+
+	if body.TurmaID != nil {
+		if err := d.Store.SetTrailTurma(ctx, store.SetTrailTurmaParams{ID: trail.ID, TurmaID: body.TurmaID}); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao vincular turma"})
+			return
+		}
 	}
 
 	baseURL := getenv("PUBLIC_BASE_URL", "http://localhost:3000")
