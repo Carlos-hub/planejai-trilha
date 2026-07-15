@@ -86,6 +86,22 @@ export interface PublishResult {
   publica_url: string;
 }
 
+// --- turma_handlers.go: turmaResponse (GET/POST /api/turmas) ---
+export interface Turma {
+  id: number;
+  nome: string;
+  etapa: string;
+  anos: number[];
+}
+
+// --- turma_handlers.go: importStudentsResponse (POST /api/turmas/:id/students/import) ---
+export interface ImportedStudent {
+  nome: string;
+  matricula: string | null;
+  usuario: string;
+  senha: string;
+}
+
 // --- lesson_handlers.go: tentativaStats / trailStatsResponse (GET /api/trails/:id/stats) ---
 export interface Tentativa {
   nome_aluno: string;

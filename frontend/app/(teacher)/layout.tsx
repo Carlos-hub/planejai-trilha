@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PlusCircle, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, PlusCircle, Users, LogOut, Menu, X } from "lucide-react";
 import { useMe } from "@/lib/hooks";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,12 @@ const NAV = [
     label: "Nova aula",
     icon: PlusCircle,
     match: (p: string) => p.startsWith("/lessons/new"),
+  },
+  {
+    href: "/turmas",
+    label: "Turmas",
+    icon: Users,
+    match: (p: string) => p.startsWith("/turmas"),
   },
 ];
 

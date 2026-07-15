@@ -1,4 +1,4 @@
-import type { Student } from "./types";
+import type { Student, Turma, ImportedStudent } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -20,5 +20,27 @@ export function studentLogin(usuario: string, senha: string): Promise<Student> {
   return apiFetch<Student>("/api/student/login", {
     method: "POST",
     body: JSON.stringify({ usuario, senha }),
+  });
+}
+
+export const listTurmas = () => apiFetch<Turma[]>("/api/turmas");
+
+export const getTurma = (id: number) =>
+  apiFetch<{
+    turma: Turma;
+    alunos: { id: number; nome: string; usuario: string; matricula: string | null }[];
+  }>(`/api/turmas/${id}`);
+
+export const createTurma = (input: { nome: string; etapa?: string; anos?: number[] }) =>
+  apiFetch<Turma>("/api/turmas", { method: "POST", body: JSON.stringify(input) });
+
+export async function importStudentsCSV(
+  id: number,
+  csvText: string
+): Promise<{ criados: ImportedStudent[] }> {
+  return apiFetch<{ criados: ImportedStudent[] }>(`/api/turmas/${id}/students/import`, {
+    method: "POST",
+    headers: { "Content-Type": "text/csv" },
+    body: csvText,
   });
 }
