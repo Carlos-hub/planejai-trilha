@@ -25,9 +25,9 @@ export function LessonMeta({
   onDuracaoChange: (d: number) => void;
 }) {
   const [skills, setSkills] = useState<BnccSkill[] | null>(null);
+  const [etapa, setEtapa] = useState("");
   const [disciplina, setDisciplina] = useState("");
-  const [ano, setAno] = useState("");
-  const [assunto, setAssunto] = useState("");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -39,54 +39,74 @@ export function LessonMeta({
     };
   }, []);
 
+  // Disciplinas narrow to the selected etapa (EF and EM don't share them).
   const disciplinas = useMemo(
-    () => [...new Set((skills ?? []).map((s) => s.disciplina))].sort(),
-    [skills]
-  );
-  const anos = useMemo(
-    () => [...new Set((skills ?? []).map((s) => s.ano))].sort(),
-    [skills]
-  );
-
-  // Assuntos available narrow to the current disciplina/ano selection.
-  const assuntos = useMemo(
     () =>
       [
         ...new Set(
           (skills ?? [])
-            .filter(
-              (s) =>
-                (!disciplina || s.disciplina === disciplina) &&
-                (!ano || s.ano === ano)
-            )
-            .map((s) => s.assunto)
-            .filter(Boolean)
+            .filter((s) => !etapa || s.etapa === etapa)
+            .map((s) => s.disciplina)
         ),
       ].sort(),
-    [skills, disciplina, ano]
+    [skills, etapa]
   );
 
-  // Drop the assunto filter if it no longer applies to the current selection.
+  // Drop the disciplina filter if it no longer belongs to the current etapa.
   useEffect(() => {
-    if (assunto && !assuntos.includes(assunto)) setAssunto("");
-  }, [assunto, assuntos]);
+    if (disciplina && !disciplinas.includes(disciplina)) setDisciplina("");
+  }, [disciplina, disciplinas]);
 
-  const filtered = useMemo(
-    () =>
-      (skills ?? []).filter(
-        (s) =>
-          (!disciplina || s.disciplina === disciplina) &&
-          (!ano || s.ano === ano) &&
-          (!assunto || s.assunto === assunto)
-      ),
-    [skills, disciplina, ano, assunto]
-  );
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (skills ?? []).filter(
+      (s) =>
+        (!etapa || s.etapa === etapa) &&
+        (!disciplina || s.disciplina === disciplina) &&
+        (!q ||
+          s.code.toLowerCase().includes(q) ||
+          s.disciplina.toLowerCase().includes(q) ||
+          s.assunto.toLowerCase().includes(q) ||
+          s.descricao.toLowerCase().includes(q))
+    );
+  }, [skills, etapa, disciplina, query]);
+
+  // Full catalog is large; cap the rendered options and nudge to refine.
+  const LIMIT = 300;
+  const shown = filtered.slice(0, LIMIT);
+  const overflow = filtered.length - shown.length;
 
   const selected = (skills ?? []).find((s) => s.id === bnccSkillId) ?? null;
 
+  const etapas = [
+    { value: "", label: "Todas" },
+    { value: "EF", label: "Fundamental" },
+    { value: "EM", label: "Médio" },
+  ];
+
   return (
     <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <Field label="Etapa de ensino">
+        <div className="flex flex-wrap gap-2">
+          {etapas.map((e) => (
+            <button
+              key={e.value}
+              type="button"
+              onClick={() => setEtapa(e.value)}
+              className={cn(
+                "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                etapa === e.value
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-input bg-card text-muted-foreground hover:border-primary/40"
+              )}
+            >
+              {e.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Disciplina">
           <select
             className={selectClass}
@@ -101,34 +121,13 @@ export function LessonMeta({
             ))}
           </select>
         </Field>
-        <Field label="Ano / série">
-          <select
-            className={selectClass}
-            value={ano}
-            onChange={(e) => setAno(e.target.value)}
-          >
-            <option value="">Todos os anos</option>
-            {anos.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Assunto">
-          <select
-            className={selectClass}
-            value={assunto}
-            onChange={(e) => setAssunto(e.target.value)}
-            disabled={assuntos.length === 0}
-          >
-            <option value="">Todos os assuntos</option>
-            {assuntos.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
+        <Field label="Buscar matéria / tópico">
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ex.: frações, leitura, EF67LP08…"
+          />
         </Field>
       </div>
 
@@ -148,14 +147,22 @@ export function LessonMeta({
           }
         >
           <option value="">
-            {skills === null ? "Carregando…" : "Selecione uma habilidade"}
+            {skills === null
+              ? "Carregando…"
+              : `Selecione uma habilidade (${filtered.length})`}
           </option>
-          {filtered.map((s) => (
+          {shown.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.code} · {s.assunto} · {s.ano}
+              {s.code} · {s.assunto} · {s.ano_label}
             </option>
           ))}
         </select>
+        {overflow > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Mostrando {LIMIT} de {filtered.length}. Refine a busca para ver o
+            restante.
+          </p>
+        )}
       </Field>
 
       {selected && (
@@ -165,7 +172,7 @@ export function LessonMeta({
               {selected.code}
             </span>
             <span className="text-xs text-muted-foreground">
-              {selected.disciplina} · {selected.ano} · {selected.assunto}
+              {selected.disciplina} · {selected.ano_label} · {selected.assunto}
             </span>
           </div>
           <p className="mt-2 text-sm text-foreground/80">{selected.descricao}</p>

@@ -64,8 +64,10 @@ export interface Lesson {
 export interface BnccSkill {
   id: number;
   code: string;
+  etapa: string;
   disciplina: string;
-  ano: string;
+  anos: number[];
+  ano_label: string;
   assunto: string;
   descricao: string;
 }

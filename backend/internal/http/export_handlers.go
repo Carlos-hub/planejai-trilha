@@ -48,7 +48,7 @@ func (d Deps) exportTrailPDF(w http.ResponseWriter, r *http.Request) {
 	if err == nil && lp.BnccSkillID != nil {
 		skill, err := d.Store.GetBnccSkill(ctx, *lp.BnccSkillID)
 		if err == nil {
-			tituloAula = skill.Disciplina + " · " + skill.Ano
+			tituloAula = skill.Disciplina + " · " + skill.AnoLabel()
 		}
 	}
 

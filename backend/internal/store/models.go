@@ -17,12 +17,13 @@ type AttemptAnswer struct {
 }
 
 type BnccSkill struct {
-	ID         int64  `json:"id"`
-	Code       string `json:"code"`
-	Disciplina string `json:"disciplina"`
-	Ano        string `json:"ano"`
-	Descricao  string `json:"descricao"`
-	Assunto    string `json:"assunto"`
+	ID         int64   `json:"id"`
+	Code       string  `json:"code"`
+	Disciplina string  `json:"disciplina"`
+	Descricao  string  `json:"descricao"`
+	Assunto    string  `json:"assunto"`
+	Etapa      string  `json:"etapa"`
+	Anos       []int32 `json:"anos"`
 }
 
 type LessonPlan struct {

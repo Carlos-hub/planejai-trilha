@@ -6,5 +6,7 @@ migrate-down:
 	goose -dir migrations postgres "$(DB_URL)" down
 sqlc:
 	sqlc generate
+bnccseed:
+	go run ./cmd/bnccseed -out seed/bncc.json
 test:
 	go test ./...

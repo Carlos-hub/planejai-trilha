@@ -8,33 +8,41 @@ import (
 
 // bnccSkillResponse is the shape returned by listBnccSkills.
 type bnccSkillResponse struct {
-	ID         int64  `json:"id"`
-	Code       string `json:"code"`
-	Disciplina string `json:"disciplina"`
-	Ano        string `json:"ano"`
-	Assunto    string `json:"assunto"`
-	Descricao  string `json:"descricao"`
+	ID         int64   `json:"id"`
+	Code       string  `json:"code"`
+	Etapa      string  `json:"etapa"`
+	Disciplina string  `json:"disciplina"`
+	Anos       []int32 `json:"anos"`
+	AnoLabel   string  `json:"ano_label"`
+	Assunto    string  `json:"assunto"`
+	Descricao  string  `json:"descricao"`
 }
 
 func toBnccSkillResponse(s store.BnccSkill) bnccSkillResponse {
+	anos := s.Anos
+	if anos == nil {
+		anos = []int32{}
+	}
 	return bnccSkillResponse{
 		ID:         s.ID,
 		Code:       s.Code,
+		Etapa:      s.Etapa,
 		Disciplina: s.Disciplina,
-		Ano:        s.Ano,
+		Anos:       anos,
+		AnoLabel:   s.AnoLabel(),
 		Assunto:    s.Assunto,
 		Descricao:  s.Descricao,
 	}
 }
 
 // listBnccSkills handles GET /api/bncc-skills: lists all BNCC skills
-// available for lesson authoring, optionally filtered by disciplina/ano
-// query params.
+// available for lesson authoring, optionally filtered by etapa (EF/EM),
+// disciplina, and a free-text query (q) over code/disciplina/assunto/descricao.
 func (d Deps) listBnccSkills(w http.ResponseWriter, r *http.Request) {
 	skills, err := d.Store.ListBnccSkills(r.Context(), store.ListBnccSkillsParams{
-		Column1: r.URL.Query().Get("disciplina"),
-		Column2: r.URL.Query().Get("ano"),
-		Column3: r.URL.Query().Get("assunto"),
+		Etapa:      r.URL.Query().Get("etapa"),
+		Disciplina: r.URL.Query().Get("disciplina"),
+		Q:          r.URL.Query().Get("q"),
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao listar habilidades BNCC"})
