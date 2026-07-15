@@ -234,6 +234,18 @@ func (d Deps) submitAnswers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if attempt.StudentID != nil {
+		sid, ok := d.currentStudentID(r)
+		if !ok {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "acesso restrito à turma"})
+			return
+		}
+		if sid != *attempt.StudentID {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "acesso restrito à turma"})
+			return
+		}
+	}
+
 	if attempt.ConcluidoEm.Valid {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "tentativa já concluída"})
 		return
@@ -298,6 +310,20 @@ func (d Deps) submitAnswers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, submitAnswersResponse{Pontos: pontos, Acertos: acertos, Total: total})
+}
+
+// currentStudentID returns the logged-in student's id from the student_sid
+// session cookie, or false if there is no valid student session.
+func (d Deps) currentStudentID(r *http.Request) (int64, bool) {
+	c, err := r.Cookie(studentCookie)
+	if err != nil {
+		return 0, false
+	}
+	sess, err := d.Store.GetStudentSession(r.Context(), c.Value)
+	if err != nil {
+		return 0, false
+	}
+	return sess.StudentID, true
 }
 
 // resolveStudentForTrail enforces turma gating. For an ungated trail

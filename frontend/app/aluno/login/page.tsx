@@ -8,10 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandLockup } from "@/components/brand-mark";
 
+// safeNext only accepts a same-origin relative path (starts with a single
+// "/", never "//" or "/\" which browsers can treat as protocol-relative and
+// redirect off-site) — anything else defaults to "/".
+function safeNext(raw: string | null): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/")) return "/";
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/";
+  return raw;
+}
+
 function AlunoLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/";
+  const next = safeNext(params.get("next"));
 
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");

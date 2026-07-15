@@ -38,6 +38,10 @@ func (d Deps) exportTrailPDF(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "trilha não encontrada"})
 		return
 	}
+	if _, status := d.resolveStudentForTrail(r, trail); status != 0 {
+		writeJSON(w, status, map[string]string{"error": "acesso restrito à turma"})
+		return
+	}
 
 	tituloAula := "Trilha de Estudos"
 	lp, err := d.Store.GetLessonPlan(ctx, trail.LessonPlanID)

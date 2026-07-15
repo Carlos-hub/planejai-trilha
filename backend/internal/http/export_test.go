@@ -119,6 +119,53 @@ func TestExportTrailPDF(t *testing.T) {
 	}
 }
 
+// TestExportPDFGated verifies the C1 fix: PDF export of a trail bound to a
+// turma must respect the same gate as publicTrail — anonymous requests get
+// 401, and only a student enrolled in the trail's turma can download it.
+func TestExportPDFGated(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "profExportGate-turma@t.com")
+
+	// create a turma owned by cookie
+	tb, _ := json.Marshal(map[string]any{"nome": "7B"})
+	tr := httptest.NewRequest("POST", "/api/turmas", bytes.NewReader(tb))
+	tr.AddCookie(cookie)
+	tw := httptest.NewRecorder()
+	r.ServeHTTP(tw, tr)
+	var turma struct {
+		ID int64 `json:"id"`
+	}
+	json.Unmarshal(tw.Body.Bytes(), &turma)
+
+	// publish a trail bound to this turma
+	code := publishTrailToTurma(t, d, r, cookie, turma.ID)
+
+	// anonymous export of a gated trail -> 401
+	ar := httptest.NewRequest("GET", "/api/t/"+code+"/export.pdf", nil)
+	aw := httptest.NewRecorder()
+	r.ServeHTTP(aw, ar)
+	if aw.Code != http.StatusUnauthorized {
+		t.Fatalf("anon gated export = %d, want 401", aw.Code)
+	}
+
+	// enrolled student can export -> 200, application/pdf
+	hash, _ := auth.HashPassword("aluno123")
+	s, _ := d.Store.CreateStudent(context.Background(), store.CreateStudentParams{TurmaID: turma.ID, Nome: "Bia", Usuario: "bia.exportgate.cc", SenhaHash: hash})
+	ssid, _ := auth.NewSessionID()
+	d.Store.CreateStudentSession(context.Background(), store.CreateStudentSessionParams{ID: ssid, StudentID: s.ID, ExpiresAt: pgTime(timePlus24h())})
+	sr := httptest.NewRequest("GET", "/api/t/"+code+"/export.pdf", nil)
+	sr.AddCookie(&http.Cookie{Name: "student_sid", Value: ssid})
+	sw := httptest.NewRecorder()
+	r.ServeHTTP(sw, sr)
+	if sw.Code != http.StatusOK {
+		t.Fatalf("enrolled gated export = %d, want 200, body=%s", sw.Code, sw.Body)
+	}
+	if ct := sw.Header().Get("Content-Type"); !strings.Contains(ct, "application/pdf") {
+		t.Fatalf("want Content-Type application/pdf, got %q", ct)
+	}
+}
+
 func min(a, b int) int {
 	if a < b {
 		return a
