@@ -105,6 +105,9 @@ func (d Deps) patchTurma(w http.ResponseWriter, r *http.Request) {
 	if in.Anos == nil {
 		in.Anos = turma.Anos
 	}
+	if in.Etapa == "" {
+		in.Etapa = turma.Etapa
+	}
 	updated, err := d.Store.UpdateTurma(r.Context(), store.UpdateTurmaParams{
 		ID: turma.ID, Nome: in.Nome, Etapa: in.Etapa, Anos: in.Anos,
 	})

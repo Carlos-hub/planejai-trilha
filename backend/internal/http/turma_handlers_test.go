@@ -60,6 +60,60 @@ func TestTurmaCRUDAndOwnership(t *testing.T) {
 	}
 }
 
+func TestPatchTurmaPreservesEtapa(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "prof-patch-etapa@t.com")
+
+	// create with non-empty etapa
+	body, _ := json.Marshal(map[string]any{"nome": "8A", "etapa": "EF", "anos": []int{8}})
+	req := httptest.NewRequest("POST", "/api/turmas", bytes.NewReader(body))
+	req.AddCookie(cookie)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("create status = %d body=%s", w.Code, w.Body)
+	}
+	var created struct {
+		ID int64 `json:"id"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &created)
+
+	// patch omitting etapa
+	patchBody, _ := json.Marshal(map[string]any{"nome": "8B"})
+	req2 := httptest.NewRequest("PATCH", "/api/turmas/"+itoa(created.ID), bytes.NewReader(patchBody))
+	req2.AddCookie(cookie)
+	w2 := httptest.NewRecorder()
+	r.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("patch status = %d body=%s", w2.Code, w2.Body)
+	}
+
+	// get and verify etapa preserved
+	req3 := httptest.NewRequest("GET", "/api/turmas/"+itoa(created.ID), nil)
+	req3.AddCookie(cookie)
+	w3 := httptest.NewRecorder()
+	r.ServeHTTP(w3, req3)
+	if w3.Code != http.StatusOK {
+		t.Fatalf("get status = %d body=%s", w3.Code, w3.Body)
+	}
+	var got struct {
+		Turma struct {
+			Etapa string `json:"etapa"`
+			Nome  string `json:"nome"`
+		} `json:"turma"`
+	}
+	if err := json.Unmarshal(w3.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Turma.Etapa != "EF" {
+		t.Fatalf("etapa = %q, want %q", got.Turma.Etapa, "EF")
+	}
+	if got.Turma.Nome != "8B" {
+		t.Fatalf("nome = %q, want %q", got.Turma.Nome, "8B")
+	}
+}
+
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
 
 func timePlus24h() time.Time { return time.Now().Add(24 * time.Hour) }
