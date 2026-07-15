@@ -158,6 +158,7 @@ func (d Deps) startAttempt(w http.ResponseWriter, r *http.Request) {
 	attempt, err := d.Store.CreateAttempt(ctx, store.CreateAttemptParams{
 		StudyTrailID: trail.ID,
 		NomeAluno:    req.Nome,
+		StudentID:    nil,
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao iniciar tentativa"})

@@ -12,3 +12,5 @@ DELETE FROM trail_topics WHERE study_trail_id=$1;
 INSERT INTO trail_topics (study_trail_id, ordem, titulo, resumo) VALUES ($1,$2,$3,$4);
 -- name: ListTopics :many
 SELECT * FROM trail_topics WHERE study_trail_id=$1 ORDER BY ordem;
+-- name: SetTrailTurma :exec
+UPDATE study_trails SET turma_id=$2 WHERE id=$1;

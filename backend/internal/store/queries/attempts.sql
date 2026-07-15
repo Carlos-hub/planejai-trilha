@@ -1,5 +1,5 @@
 -- name: CreateAttempt :one
-INSERT INTO student_attempts (study_trail_id, nome_aluno) VALUES ($1,$2) RETURNING *;
+INSERT INTO student_attempts (study_trail_id, nome_aluno, student_id) VALUES ($1,$2,$3) RETURNING *;
 -- name: GetAttempt :one
 SELECT * FROM student_attempts WHERE id=$1;
 -- name: CompleteAttempt :one
