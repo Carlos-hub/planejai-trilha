@@ -66,6 +66,7 @@ export interface BnccSkill {
   code: string;
   disciplina: string;
   ano: string;
+  assunto: string;
   descricao: string;
 }
 

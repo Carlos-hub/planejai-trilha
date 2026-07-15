@@ -13,17 +13,14 @@ type skill struct {
 	Code       string `json:"code"`
 	Disciplina string `json:"disciplina"`
 	Ano        string `json:"ano"`
+	Assunto    string `json:"assunto"`
 	Descricao  string `json:"descricao"`
 }
 
+// BNCC loads the static BNCC catalog. InsertBnccSkill upserts by code, so
+// this is safe to run on every boot and keeps an existing database in sync
+// with the seed file as the catalog grows.
 func BNCC(ctx context.Context, q *store.Queries, path string) error {
-	n, err := q.CountBnccSkills(ctx)
-	if err != nil {
-		return err
-	}
-	if n > 0 {
-		return nil
-	}
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -37,6 +34,7 @@ func BNCC(ctx context.Context, q *store.Queries, path string) error {
 			Code:       it.Code,
 			Disciplina: it.Disciplina,
 			Ano:        it.Ano,
+			Assunto:    it.Assunto,
 			Descricao:  it.Descricao,
 		}); err != nil {
 			return err

@@ -9,7 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DBTX interface {
@@ -30,8 +29,4 @@ func (q *Queries) WithTx(tx pgx.Tx) *Queries {
 	return &Queries{
 		db: tx,
 	}
-}
-
-func Connect(ctx context.Context, url string) (*pgxpool.Pool, error) {
-	return pgxpool.New(ctx, url)
 }
