@@ -8,14 +8,23 @@ Planejador de aulas alinhado à **BNCC** para professores, que gera automaticame
 
 ## Visão geral
 
-O professor escolhe uma habilidade da BNCC (ou uma unidade do currículo, incluindo matérias extras como Educação Financeira) e, com um clique, a IA produz o **plano de aula** e uma **trilha do aluno** (tópicos + quiz). A trilha é publicada com um **código curto**; o aluno acessa sem login, estuda os tópicos, faz o quiz autocorrigido e ganha pontos. O professor acompanha a turma num dashboard.
+O professor escolhe uma habilidade da BNCC (ou uma unidade do currículo, incluindo matérias extras como Educação Financeira) e, com um clique, a IA produz o **plano de aula** e uma **trilha do aluno** (tópicos + quiz). A trilha pode ser publicada de duas formas: com um **código curto** de acesso anônimo (sem login), ou **atrelada a uma turma**, caso em que o aluno precisa fazer login com usuário e senha para responder. O professor gerencia suas **turmas** e importa **contas de aluno** via CSV, com credenciais geradas automaticamente. O professor acompanha a turma num dashboard.
 
 ### Fluxo do MVP
 
 ```
-Professor → login → cria plano (BNCC/currículo + duração)
-         → "Gerar com IA" → publica trilha
+Professor → login → cria turma → importa alunos via CSV (nome, matrícula opcional)
+         → sistema gera usuário + senha por aluno → professor baixa/imprime credenciais (mostradas 1x)
+Professor → cria plano (BNCC/currículo + duração) → "Gerar com IA"
+         → publica trilha (atrelada a uma turma OU anônima por código curto)
+
+Trilha atrelada a turma:
+Aluno    → /aluno/login (usuário + senha) → estuda tópicos → faz quiz → vê pontuação
+         → aluno pode trocar sua própria senha a qualquer momento
+
+Trilha anônima (sem turma):
 Aluno    → abre /t/CÓDIGO → estuda tópicos → faz quiz → vê pontuação
+
 Professor → dashboard da turma (tentativas, média, conclusões)
 ```
 
@@ -190,10 +199,19 @@ planejai/
 - **Currículo BNCC completo** por série e trimestre — do 1º ano do Fundamental à 3ª série do Médio.
 - **Matérias extras** (fora da BNCC): Educação Financeira, Projeto de Vida, Empreendedorismo, Educação Digital e Tecnologia, Cidadania/Ética/Direitos Humanos.
 - **Geração com IA** do plano de aula + trilha (structured output, provider configurável).
-- **Trilha do aluno** por código curto, sem login.
+- **Turmas**: o professor cria, lista, edita e remove turmas (`/turmas`, `/turmas/[id]`).
+- **Contas de aluno via import CSV**: upload de CSV (`nome` obrigatória, `matricula` opcional) numa turma gera usuário + senha inicial por aluno (apenas o hash bcrypt é armazenado); as credenciais em texto plano são exibidas **uma única vez** (download em CSV ou impressão) para o professor distribuir. O aluno pode trocar sua senha depois.
+- **Trilha do aluno** por código curto, sem login — continua funcionando normalmente para trilhas não atreladas a turma.
+- **Atividade atrelada à turma**: ao publicar, o professor pode vincular a trilha a uma turma; nesse caso o aluno precisa logar em `/aluno/login` (usuário + senha) e estar matriculado na turma para responder, e a tentativa fica associada à identidade do aluno.
 - **Quiz autocorrigido** com pontuação e barra de progresso (gamificação).
 - **Dashboard da turma** (tentativas, média de pontos, conclusões).
 - **Export PDF** da trilha + link de compartilhamento no WhatsApp.
+
+### Próximos passos (não implementado)
+
+- Notas/avaliação qualitativa por atividade (além da pontuação do quiz).
+- Geração de PDF de credenciais com QR Code.
+- Contas/token de administração para gestão em nível de escola.
 
 ---
 
