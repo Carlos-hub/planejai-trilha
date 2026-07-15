@@ -211,6 +211,68 @@ func TestPublishWithTurma(t *testing.T) {
 
 func timePlus24h() time.Time { return time.Now().Add(24 * time.Hour) }
 
+// publishTrailToTurma seeds a publishable trail owned by the professor
+// identified by cookie, publishes it bound to turmaID, and returns the
+// resulting short code.
+func publishTrailToTurma(t *testing.T, d Deps, r http.Handler, cookie *http.Cookie, turmaID int64) string {
+	t.Helper()
+	lessonID := seedPublishableTrail(t, d, cookie)
+	pb, _ := json.Marshal(map[string]any{"turma_id": turmaID})
+	pr := httptest.NewRequest("POST", "/api/trails/"+itoa(lessonID)+"/publish", bytes.NewReader(pb))
+	pr.AddCookie(cookie)
+	pw := httptest.NewRecorder()
+	r.ServeHTTP(pw, pr)
+	if pw.Code != http.StatusOK {
+		t.Fatalf("publishTrailToTurma: publish status = %d body=%s", pw.Code, pw.Body)
+	}
+	var published publishTrailResponse
+	if err := json.Unmarshal(pw.Body.Bytes(), &published); err != nil {
+		t.Fatal(err)
+	}
+	return published.Codigo
+}
+
+func TestGatedTrailAccess(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "profGate-turma@t.com")
+
+	// turma + student
+	tb, _ := json.Marshal(map[string]any{"nome": "7A"})
+	tr := httptest.NewRequest("POST", "/api/turmas", bytes.NewReader(tb))
+	tr.AddCookie(cookie)
+	tw := httptest.NewRecorder()
+	r.ServeHTTP(tw, tr)
+	var turma struct {
+		ID int64 `json:"id"`
+	}
+	json.Unmarshal(tw.Body.Bytes(), &turma)
+
+	// publish a trail bound to this turma; capture its code
+	code := publishTrailToTurma(t, d, r, cookie, turma.ID)
+
+	// anonymous access to a gated trail → 401
+	ar := httptest.NewRequest("GET", "/api/t/"+code, nil)
+	aw := httptest.NewRecorder()
+	r.ServeHTTP(aw, ar)
+	if aw.Code != http.StatusUnauthorized {
+		t.Fatalf("anon gated GET = %d, want 401", aw.Code)
+	}
+
+	// enrolled student can access
+	hash, _ := auth.HashPassword("aluno123")
+	s, _ := d.Store.CreateStudent(context.Background(), store.CreateStudentParams{TurmaID: turma.ID, Nome: "Bia", Usuario: "bia.gate.cc", SenhaHash: hash})
+	ssid, _ := auth.NewSessionID()
+	d.Store.CreateStudentSession(context.Background(), store.CreateStudentSessionParams{ID: ssid, StudentID: s.ID, ExpiresAt: pgTime(timePlus24h())})
+	sr := httptest.NewRequest("GET", "/api/t/"+code, nil)
+	sr.AddCookie(&http.Cookie{Name: "student_sid", Value: ssid})
+	sw := httptest.NewRecorder()
+	r.ServeHTTP(sw, sr)
+	if sw.Code != http.StatusOK {
+		t.Fatalf("enrolled gated GET = %d, want 200", sw.Code)
+	}
+}
+
 func TestImportStudents(t *testing.T) {
 	d := testDeps(t)
 	r := NewRouter(d)

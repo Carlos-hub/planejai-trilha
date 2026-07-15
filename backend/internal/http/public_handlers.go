@@ -62,6 +62,10 @@ func (d Deps) publicTrail(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "trilha não encontrada"})
 		return
 	}
+	if _, status := d.resolveStudentForTrail(r, trail); status != 0 {
+		writeJSON(w, status, map[string]string{"error": "acesso restrito à turma"})
+		return
+	}
 
 	tituloAula := "Trilha de Estudos"
 	lp, err := d.Store.GetLessonPlan(ctx, trail.LessonPlanID)
@@ -136,10 +140,6 @@ func (d Deps) startAttempt(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "corpo inválido"})
 		return
 	}
-	if strings.TrimSpace(req.Nome) == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "nome é obrigatório"})
-		return
-	}
 
 	trail, err := d.Store.GetTrailByCode(ctx, &code)
 	if err != nil {
@@ -155,10 +155,26 @@ func (d Deps) startAttempt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	student, status := d.resolveStudentForTrail(r, trail)
+	if status != 0 {
+		writeJSON(w, status, map[string]string{"error": "acesso restrito à turma"})
+		return
+	}
+	if student == nil && strings.TrimSpace(req.Nome) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "nome é obrigatório"})
+		return
+	}
+	var studentID *int64
+	nome := req.Nome
+	if student != nil {
+		studentID = &student.ID
+		nome = student.Nome
+	}
+
 	attempt, err := d.Store.CreateAttempt(ctx, store.CreateAttemptParams{
 		StudyTrailID: trail.ID,
-		NomeAluno:    req.Nome,
-		StudentID:    nil,
+		NomeAluno:    nome,
+		StudentID:    studentID,
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao iniciar tentativa"})
@@ -282,4 +298,30 @@ func (d Deps) submitAnswers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, submitAnswersResponse{Pontos: pontos, Acertos: acertos, Total: total})
+}
+
+// resolveStudentForTrail enforces turma gating. For an ungated trail
+// (TurmaID == nil) it returns (nil, 0). For a gated trail it requires a
+// valid student session whose student belongs to the trail's turma:
+// status 401 = not logged in / invalid session, 403 = wrong turma.
+func (d Deps) resolveStudentForTrail(r *http.Request, trail store.StudyTrail) (*store.Student, int) {
+	if trail.TurmaID == nil {
+		return nil, 0
+	}
+	c, err := r.Cookie(studentCookie)
+	if err != nil {
+		return nil, http.StatusUnauthorized
+	}
+	sess, err := d.Store.GetStudentSession(r.Context(), c.Value)
+	if err != nil {
+		return nil, http.StatusUnauthorized
+	}
+	s, err := d.Store.GetStudent(r.Context(), sess.StudentID)
+	if err != nil {
+		return nil, http.StatusUnauthorized
+	}
+	if s.TurmaID != *trail.TurmaID {
+		return nil, http.StatusForbidden
+	}
+	return &s, 0
 }
