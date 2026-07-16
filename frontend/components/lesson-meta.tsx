@@ -27,6 +27,7 @@ export function LessonMeta({
   const [skills, setSkills] = useState<BnccSkill[] | null>(null);
   const [etapa, setEtapa] = useState("");
   const [disciplina, setDisciplina] = useState("");
+  const [ano, setAno] = useState("");
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -57,19 +58,38 @@ export function LessonMeta({
     if (disciplina && !disciplinas.includes(disciplina)) setDisciplina("");
   }, [disciplina, disciplinas]);
 
+  // Anos available for the current etapa (a skill can span multiple anos).
+  const anos = useMemo(
+    () =>
+      [
+        ...new Set(
+          (skills ?? [])
+            .filter((s) => !etapa || s.etapa === etapa)
+            .flatMap((s) => s.anos)
+        ),
+      ].sort((a, b) => a - b),
+    [skills, etapa]
+  );
+
+  // Drop the ano filter if it no longer exists for the current etapa.
+  useEffect(() => {
+    if (ano && !anos.includes(Number(ano))) setAno("");
+  }, [ano, anos]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (skills ?? []).filter(
       (s) =>
         (!etapa || s.etapa === etapa) &&
         (!disciplina || s.disciplina === disciplina) &&
+        (!ano || s.anos.includes(Number(ano))) &&
         (!q ||
           s.code.toLowerCase().includes(q) ||
           s.disciplina.toLowerCase().includes(q) ||
           s.assunto.toLowerCase().includes(q) ||
           s.descricao.toLowerCase().includes(q))
     );
-  }, [skills, etapa, disciplina, query]);
+  }, [skills, etapa, disciplina, ano, query]);
 
   // Full catalog is large; cap the rendered options and nudge to refine.
   const LIMIT = 300;
@@ -107,6 +127,20 @@ export function LessonMeta({
       </Field>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Ano">
+          <select
+            className={selectClass}
+            value={ano}
+            onChange={(e) => setAno(e.target.value)}
+          >
+            <option value="">Todos os anos</option>
+            {anos.map((n) => (
+              <option key={n} value={n}>
+                {n}º ano
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Disciplina">
           <select
             className={selectClass}
@@ -121,15 +155,15 @@ export function LessonMeta({
             ))}
           </select>
         </Field>
-        <Field label="Buscar matéria / tópico">
-          <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="ex.: frações, leitura, EF67LP08…"
-          />
-        </Field>
       </div>
+      <Field label="Buscar matéria / tópico">
+        <Input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="ex.: frações, leitura, EF67LP08…"
+        />
+      </Field>
 
       <Field
         label="Habilidade BNCC"
