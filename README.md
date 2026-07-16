@@ -34,7 +34,7 @@ Professor → dashboard da turma (tentativas, média, conclusões)
 
 | Camada | Tecnologia |
 |--------|-----------|
-| Backend | Go 1.23, API REST |
+| Backend | Go 1.26, API REST |
 | Frontend | Next.js, TypeScript, React |
 | Banco | PostgreSQL 16 |
 | Runtime | Docker Compose |
@@ -68,7 +68,7 @@ Arquitetura de monorepo com backend Go (API REST) e frontend Next.js separados, 
 ### Pré-requisitos
 
 - Docker e Docker Compose
-- Go 1.23 (opcional, para desenvolvimento local)
+- Go 1.26 (opcional, para desenvolvimento local)
 - Node.js 20+ (opcional, para desenvolvimento local)
 - `curl` e `jq` (para rodar `scripts/smoke.sh`)
 
@@ -206,6 +206,14 @@ planejai/
 - **Quiz autocorrigido** com pontuação e barra de progresso (gamificação).
 - **Dashboard da turma** (tentativas, média de pontos, conclusões).
 - **Export PDF** da trilha + link de compartilhamento no WhatsApp.
+
+### Controle de acesso
+
+- **Senhas** (professor e aluno) são armazenadas apenas como hash **bcrypt**; a senha inicial do aluno é exibida em texto plano **uma única vez**, no retorno do import CSV, e nunca é devolvida por nenhum outro endpoint.
+- **Sessões** de professor e de aluno são separadas (cookies `sid` × `student_sid`, tabelas distintas), sem cruzamento de papéis.
+- **Trilha atrelada a turma** é bloqueada para acesso anônimo ou de aluno de outra turma em **todos** os caminhos de leitura e resposta: página da trilha, `export.pdf` e submissão de tentativa. Só o aluno matriculado e logado acessa; a submissão de uma tentativa só é aceita do próprio aluno dono da tentativa.
+- **Trilha sem turma** mantém o fluxo anônimo por código curto, inalterado.
+- **Propriedade**: um professor só enxerga/edita as próprias turmas e só vincula trilha a turma que possui (caso contrário `404`, sem vazar existência).
 
 ### Próximos passos (não implementado)
 
