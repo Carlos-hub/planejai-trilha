@@ -179,6 +179,45 @@ func (d Deps) createUniqueStudent(r *http.Request, turmaID int64, nome string, m
 	return importedStudent{}, errors.New("não foi possível gerar usuário único")
 }
 
+// addStudentRequest is the body for POST /api/turmas/{id}/students.
+type addStudentRequest struct {
+	Nome      string  `json:"nome"`
+	Matricula *string `json:"matricula"`
+}
+
+// addStudent handles POST /api/turmas/{id}/students: create a single student
+// in a turma the caller owns, generating a unique usuario + initial password.
+// The plaintext password is returned once, same as the CSV import.
+func (d Deps) addStudent(w http.ResponseWriter, r *http.Request) {
+	userID, _ := userIDFromContext(r)
+	turma, ok := d.loadOwnedTurma(w, r, userID)
+	if !ok {
+		return
+	}
+	var in addStudentRequest
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "json inválido"})
+		return
+	}
+	nome := strings.TrimSpace(in.Nome)
+	if nome == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "nome é obrigatório"})
+		return
+	}
+	var mat *string
+	if in.Matricula != nil {
+		if v := strings.TrimSpace(*in.Matricula); v != "" {
+			mat = &v
+		}
+	}
+	created, err := d.createUniqueStudent(r, turma.ID, nome, mat)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao criar aluno"})
+		return
+	}
+	writeJSON(w, http.StatusCreated, created)
+}
+
 func (d Deps) importStudents(w http.ResponseWriter, r *http.Request) {
 	userID, _ := userIDFromContext(r)
 	turma, ok := d.loadOwnedTurma(w, r, userID)

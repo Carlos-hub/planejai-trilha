@@ -327,3 +327,72 @@ func TestImportStudents(t *testing.T) {
 		t.Fatalf("plaintext password leaked in GET")
 	}
 }
+
+func TestAddStudentManual(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "profAdd-turma@t.com")
+
+	// create a turma
+	tb, _ := json.Marshal(map[string]any{"nome": "5A add"})
+	tr := httptest.NewRequest("POST", "/api/turmas", bytes.NewReader(tb))
+	tr.AddCookie(cookie)
+	tw := httptest.NewRecorder()
+	r.ServeHTTP(tw, tr)
+	var turma struct {
+		ID int64 `json:"id"`
+	}
+	json.Unmarshal(tw.Body.Bytes(), &turma)
+
+	// empty nome → 400
+	badReq := httptest.NewRequest("POST", "/api/turmas/"+itoa(turma.ID)+"/students", bytes.NewReader([]byte(`{"nome":"  "}`)))
+	badReq.AddCookie(cookie)
+	badW := httptest.NewRecorder()
+	r.ServeHTTP(badW, badReq)
+	if badW.Code != http.StatusBadRequest {
+		t.Fatalf("empty nome = %d, want 400", badW.Code)
+	}
+
+	// valid add → 201 with generated credentials
+	body, _ := json.Marshal(map[string]any{"nome": "Carlos Silva", "matricula": "42"})
+	req := httptest.NewRequest("POST", "/api/turmas/"+itoa(turma.ID)+"/students", bytes.NewReader(body))
+	req.AddCookie(cookie)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("add = %d body=%s", w.Code, w.Body)
+	}
+	var created struct {
+		Nome, Usuario, Senha string
+		Matricula            *string
+	}
+	json.Unmarshal(w.Body.Bytes(), &created)
+	if created.Usuario == "" || created.Senha == "" {
+		t.Fatalf("missing credentials: %+v", created)
+	}
+	if created.Matricula == nil || *created.Matricula != "42" {
+		t.Fatalf("matricula = %v", created.Matricula)
+	}
+
+	// student now appears in the turma, without leaking the password
+	gr := httptest.NewRequest("GET", "/api/turmas/"+itoa(turma.ID), nil)
+	gr.AddCookie(cookie)
+	gw := httptest.NewRecorder()
+	r.ServeHTTP(gw, gr)
+	if !bytes.Contains(gw.Body.Bytes(), []byte("Carlos Silva")) {
+		t.Fatalf("student not persisted: %s", gw.Body)
+	}
+	if bytes.Contains(gw.Body.Bytes(), []byte(created.Senha)) {
+		t.Fatal("plaintext password leaked in GET")
+	}
+
+	// another professor cannot add to this turma → 404
+	other := loginProfessor(t, d, "profAddOther-turma@t.com")
+	fr := httptest.NewRequest("POST", "/api/turmas/"+itoa(turma.ID)+"/students", bytes.NewReader(body))
+	fr.AddCookie(other)
+	fw := httptest.NewRecorder()
+	r.ServeHTTP(fw, fr)
+	if fw.Code != http.StatusNotFound {
+		t.Fatalf("cross-owner add = %d, want 404", fw.Code)
+	}
+}

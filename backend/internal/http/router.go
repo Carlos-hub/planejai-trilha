@@ -56,6 +56,7 @@ func NewRouter(d Deps) http.Handler {
 			r.Get("/turmas/{id}", d.getTurma)
 			r.Patch("/turmas/{id}", d.patchTurma)
 			r.Delete("/turmas/{id}", d.deleteTurma)
+			r.Post("/turmas/{id}/students", d.addStudent)
 			r.Post("/turmas/{id}/students/import", d.importStudents)
 			r.Post("/lessons", d.createLesson)
 			r.Get("/lessons", d.listLessons)

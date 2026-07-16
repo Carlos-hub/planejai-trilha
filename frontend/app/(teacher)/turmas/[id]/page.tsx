@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download, Printer, Upload } from "lucide-react";
-import { getTurma, importStudentsCSV } from "@/lib/api";
+import { ArrowLeft, Download, Printer, Upload, UserPlus } from "lucide-react";
+import { addStudent, getTurma, importStudentsCSV } from "@/lib/api";
 import type { ImportedStudent } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -30,6 +32,11 @@ export default function TurmaDetailPage() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [addNome, setAddNome] = useState("");
+  const [addMatricula, setAddMatricula] = useState("");
+  const [addingStudent, setAddingStudent] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     getTurma(turmaId)
@@ -62,6 +69,28 @@ export default function TurmaDetailPage() {
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function onAddStudent(e: React.FormEvent) {
+    e.preventDefault();
+    const nome = addNome.trim();
+    if (!nome) {
+      setAddError("Informe o nome do aluno.");
+      return;
+    }
+    setAddingStudent(true);
+    setAddError(null);
+    try {
+      const created = await addStudent(turmaId, nome, addMatricula);
+      setCriados((prev) => [...prev, created]);
+      setAddNome("");
+      setAddMatricula("");
+      reload();
+    } catch {
+      setAddError("Não foi possível adicionar o aluno.");
+    } finally {
+      setAddingStudent(false);
     }
   }
 
@@ -138,6 +167,47 @@ export default function TurmaDetailPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Adicionar aluno manualmente</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onAddStudent} className="flex flex-col gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="add-nome">Nome</Label>
+                <Input
+                  id="add-nome"
+                  value={addNome}
+                  onChange={(e) => setAddNome(e.target.value)}
+                  placeholder="Nome do aluno"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="add-matricula">Matrícula (opcional)</Label>
+                <Input
+                  id="add-matricula"
+                  value={addMatricula}
+                  onChange={(e) => setAddMatricula(e.target.value)}
+                  placeholder="Matrícula"
+                />
+              </div>
+            </div>
+            <div>
+              <Button type="submit" disabled={addingStudent}>
+                <UserPlus className="size-4" />
+                {addingStudent ? "Adicionando..." : "Adicionar aluno"}
+              </Button>
+            </div>
+            {addError && (
+              <p className="text-sm text-destructive" role="alert">
+                {addError}
+              </p>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
       {criados.length > 0 && (
         <Card className="print:shadow-none">
           <CardHeader>
@@ -187,7 +257,7 @@ export default function TurmaDetailPage() {
         <CardContent>
           {alunos.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhum aluno ainda. Importe uma planilha CSV para começar.
+              Nenhum aluno ainda. Adicione manualmente ou importe uma planilha CSV.
             </p>
           ) : (
             <Table>

@@ -45,6 +45,16 @@ export async function importStudentsCSV(
   });
 }
 
+export const addStudent = (
+  id: number,
+  nome: string,
+  matricula?: string
+): Promise<ImportedStudent> =>
+  apiFetch<ImportedStudent>(`/api/turmas/${id}/students`, {
+    method: "POST",
+    body: JSON.stringify({ nome, matricula: matricula?.trim() ? matricula.trim() : null }),
+  });
+
 export const getAIToken = () => apiFetch<AITokenStatus>("/api/me/ai-token");
 
 export const saveAIToken = (provider: AIProvider, token: string) =>
