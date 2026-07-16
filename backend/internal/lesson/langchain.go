@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/Carlos-hub/planejai/backend/internal/store"
@@ -14,40 +13,11 @@ import (
 	"github.com/tmc/langchaingo/llms/openai"
 )
 
-// getenv returns the value of the environment variable key, or def if unset
-// or empty.
-func getenv(key, def string) string {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	return v
-}
-
 // lcGen is a Generator backed by a LangChainGo llms.Model. It is brand
 // agnostic: the concrete provider is selected at construction time via
-// NewLangChainGenerator, based on the LLM_PROVIDER env var.
+// NewGeneratorForProvider.
 type lcGen struct {
 	llm llms.Model
-}
-
-// NewLangChainGenerator builds a Generator using LangChainGo, selecting the
-// underlying provider/model from the LLM_PROVIDER / LLM_MODEL environment
-// variables. Only internal/lesson may import provider-specific packages.
-func NewLangChainGenerator() (Generator, error) {
-	provider := getenv("LLM_PROVIDER", "anthropic")
-	model := getenv("LLM_MODEL", "claude-opus-4-8")
-
-	switch provider {
-	case "anthropic":
-		m, err := anthropic.New(anthropic.WithModel(model))
-		if err != nil {
-			return nil, err
-		}
-		return &lcGen{llm: m}, nil
-	default:
-		return nil, fmt.Errorf("provider não suportado: %s", provider)
-	}
 }
 
 // defaultModels maps each supported provider to its fixed model. Adjust here
