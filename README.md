@@ -96,7 +96,7 @@ docker compose up
 
 ### Smoke test (ponta a ponta)
 
-Valida o fluxo completo (login → criar aula manual → publicar trilha → leitura pública → tentativa do aluno → pontuação → dashboard → export PDF) sem depender da IA (evita o endpoint `/generate`, que exige uma `ANTHROPIC_API_KEY` real):
+Valida o fluxo completo (login → criar aula manual → publicar trilha → leitura pública → tentativa do aluno → pontuação → dashboard → export PDF) sem depender da IA (evita o endpoint `/generate`, que exige um token de IA real configurado no perfil do professor):
 
 ```bash
 cp .env.example .env
@@ -113,15 +113,21 @@ SMOKE_SKIP_WEB=1 bash scripts/smoke.sh
 
 ### Configurar a IA
 
-No `.env`, defina o provider, modelo e chave:
+A geração com IA usa um **token por professor**, não mais uma chave global no `.env`. Cada professor cadastra o próprio token na página **`/perfil`** (`PUT/GET/DELETE /api/me/ai-token`), escolhendo um provider entre:
 
-```dotenv
-LLM_PROVIDER=anthropic
-LLM_MODEL=claude-opus-4-8
-ANTHROPIC_API_KEY=sk-ant-xxx
-```
+| Provider  | Modelo (fixo) |
+|-----------|---------------|
+| Claude    | `claude-opus-4-8` |
+| GPT       | `gpt-4o` |
+| Gemini    | `gemini-2.0-flash` |
+| Deepseek  | `deepseek-chat` |
+| Llama     | `llama-3.3-70b-versatile` |
 
-Para outro provider (OpenAI, Gemini, etc.), mude `LLM_PROVIDER` e `LLM_MODEL`, informe a chave correspondente.
+O token é **criptografado em repouso** (AES-256-GCM) antes de ser salvo no banco; nenhum endpoint devolve o token em texto plano depois de salvo. A chave mestra dessa criptografia vem da env `TOKEN_ENC_KEY` (veja abaixo) — **sem ela, salvar um token falha e a geração fica indisponível**.
+
+Se o professor tentar gerar um plano/trilha **sem ter configurado um token**, a API responde **`503`** pedindo para configurar o token no perfil (não há fallback de provider da plataforma).
+
+> A antiga configuração global via `.env` (`LLM_PROVIDER` / `LLM_MODEL` / `ANTHROPIC_API_KEY`) foi **removida**: essas variáveis não existem mais e não influenciam a geração.
 
 ---
 
@@ -164,9 +170,7 @@ npm run build
 Consulte `.env.example`:
 
 - `DATABASE_URL`: conexão PostgreSQL (formato libpq)
-- `LLM_PROVIDER`: provider de IA (`anthropic`, `openai`, etc.)
-- `LLM_MODEL`: modelo dentro do provider
-- `ANTHROPIC_API_KEY`: chave de autenticação (ou equivalente do provider)
+- `TOKEN_ENC_KEY`: chave mestra (base64 de 32 bytes, ex. `openssl rand -base64 32`) usada para criptografar (AES-256-GCM) o token de IA de cada professor em repouso. Obrigatória para salvar token e para a geração com IA funcionar.
 - `SESSION_SECRET`: chave para sessões (mín. 32 bytes)
 - `PORT`: porta do backend (default 8080)
 - `NEXT_PUBLIC_API_URL`: URL da API vista pelo frontend (ex. `http://localhost:8080`)
@@ -198,7 +202,8 @@ planejai/
 
 - **Currículo BNCC completo** por série e trimestre — do 1º ano do Fundamental à 3ª série do Médio.
 - **Matérias extras** (fora da BNCC): Educação Financeira, Projeto de Vida, Empreendedorismo, Educação Digital e Tecnologia, Cidadania/Ética/Direitos Humanos.
-- **Geração com IA** do plano de aula + trilha (structured output, provider configurável).
+- **Geração com IA** do plano de aula + trilha (structured output, provider configurável por professor).
+- **Token de IA por professor**, configurado em `/perfil` e criptografado em repouso (AES-256-GCM); sem token configurado, a geração retorna `503`.
 - **Turmas**: o professor cria, lista, edita e remove turmas (`/turmas`, `/turmas/[id]`).
 - **Contas de aluno via import CSV**: upload de CSV (`nome` obrigatória, `matricula` opcional) numa turma gera usuário + senha inicial por aluno (apenas o hash bcrypt é armazenado); as credenciais em texto plano são exibidas **uma única vez** (download em CSV ou impressão) para o professor distribuir. O aluno pode trocar sua senha depois.
 - **Trilha do aluno** por código curto, sem login — continua funcionando normalmente para trilhas não atreladas a turma.
