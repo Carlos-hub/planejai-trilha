@@ -31,10 +31,8 @@ func testDeps(t *testing.T) Deps {
 	return Deps{Store: store.New(pool), Pool: pool, SessionSecret: "test-secret"}
 }
 
-// withAI configures d with a secret box + a mock NewGen and seeds an encrypted
-// token for userID, so generatorForUser resolves to a MockGenerator. It returns
-// a pointer that captures the provider requested from NewGen.
-func withAI(t *testing.T, d *Deps, userID int64, provider string) *string {
+// setTestSecret gives d a random AES-256 secret box for tests.
+func setTestSecret(t *testing.T, d *Deps) {
 	t.Helper()
 	k := make([]byte, 32)
 	rand.Read(k)
@@ -43,12 +41,20 @@ func withAI(t *testing.T, d *Deps, userID int64, provider string) *string {
 		t.Fatal(err)
 	}
 	d.Secret = box
+}
+
+// withAI configures d with a secret box + a mock NewGen and seeds an encrypted
+// token for userID, so generatorForUser resolves to a MockGenerator. It returns
+// a pointer that captures the provider requested from NewGen.
+func withAI(t *testing.T, d *Deps, userID int64, provider string) *string {
+	t.Helper()
+	setTestSecret(t, d)
 	captured := new(string)
 	d.NewGen = func(ctx context.Context, prov, key string) (lesson.Generator, error) {
 		*captured = prov
 		return &lesson.MockGenerator{}, nil
 	}
-	ct, nonce, err := box.Seal([]byte("fake-token"))
+	ct, nonce, err := d.Secret.Seal([]byte("fake-token"))
 	if err != nil {
 		t.Fatal(err)
 	}

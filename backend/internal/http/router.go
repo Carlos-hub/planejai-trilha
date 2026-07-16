@@ -65,6 +65,9 @@ func NewRouter(d Deps) http.Handler {
 			r.Post("/lessons/{id}/enhance", d.enhanceLesson)
 			r.Post("/trails/{id}/publish", d.publishTrail)
 			r.Get("/trails/{id}/stats", d.trailStats)
+			r.Put("/me/ai-token", d.putAIToken)
+			r.Get("/me/ai-token", d.getAIToken)
+			r.Delete("/me/ai-token", d.deleteAIToken)
 		})
 	})
 	return r
