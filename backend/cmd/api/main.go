@@ -9,6 +9,7 @@ import (
 
 	apihttp "github.com/Carlos-hub/planejai/backend/internal/http"
 	"github.com/Carlos-hub/planejai/backend/internal/lesson"
+	"github.com/Carlos-hub/planejai/backend/internal/secret"
 	"github.com/Carlos-hub/planejai/backend/internal/seed"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -30,11 +31,12 @@ func main() {
 	defer pool.Close()
 
 	deps := apihttp.Deps{Store: store.New(pool), Pool: pool}
-	gen, err := lesson.NewLangChainGenerator()
-	if err != nil {
-		log.Printf("lesson generator unavailable: %v", err)
+	if box, err := secret.NewBox(os.Getenv("TOKEN_ENC_KEY")); err != nil {
+		log.Printf("token encryption unavailable: %v", err)
+	} else {
+		deps.Secret = box
 	}
-	deps.Gen = gen
+	deps.NewGen = lesson.NewGeneratorForProvider
 	if err := seed.BNCC(ctx, deps.Store, "seed/bncc.json"); err != nil {
 		log.Printf("seed: %v", err)
 	}

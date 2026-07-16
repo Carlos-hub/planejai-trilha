@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Carlos-hub/planejai/backend/internal/lesson"
+	"github.com/Carlos-hub/planejai/backend/internal/secret"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
 
@@ -19,7 +21,8 @@ type Deps struct {
 	Store         *store.Queries
 	Pool          *pgxpool.Pool
 	SessionSecret string
-	Gen           lesson.Generator
+	Secret        *secret.Box
+	NewGen        func(ctx context.Context, provider, apiKey string) (lesson.Generator, error)
 }
 
 func NewRouter(d Deps) http.Handler {

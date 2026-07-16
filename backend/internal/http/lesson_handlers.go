@@ -537,11 +537,6 @@ func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if d.Gen == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "gerador de IA indisponível"})
-		return
-	}
-
 	var req generateLessonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "corpo inválido"})
@@ -552,6 +547,16 @@ func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
 	skill, err := d.Store.GetBnccSkill(ctx, req.BnccSkillID)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "habilidade BNCC inválida"})
+		return
+	}
+
+	gen, err := d.generatorForUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, errNoAIToken) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "configure seu token de IA no seu perfil"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao preparar gerador de IA"})
 		return
 	}
 
@@ -568,7 +573,7 @@ func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := d.Gen.Generate(ctx, skill, req.Duracao)
+	data, err := gen.Generate(ctx, skill, req.Duracao)
 	if err != nil {
 		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "falha na geração"})
@@ -669,12 +674,17 @@ func (d Deps) enhanceLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if d.Gen == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "gerador de IA indisponível"})
+	ctx := r.Context()
+	gen, err := d.generatorForUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, errNoAIToken) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "configure seu token de IA no seu perfil"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao preparar gerador de IA"})
 		return
 	}
 
-	ctx := r.Context()
 	draft, err := d.lessonToData(ctx, lp)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar aula"})
@@ -690,7 +700,7 @@ func (d Deps) enhanceLesson(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	enhanced, err := d.Gen.Enhance(ctx, draft, skill)
+	enhanced, err := gen.Enhance(ctx, draft, skill)
 	if err != nil {
 		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "falha no aprimoramento"})
