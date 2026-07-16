@@ -151,3 +151,19 @@ export interface AttemptResult {
   acertos: number;
   total: number;
 }
+
+// --- ai_token_handlers.go: aiTokenStatusResponse (GET/PUT /api/me/ai-token) ---
+export type AIProvider = "anthropic" | "openai" | "googleai" | "deepseek" | "llama";
+
+export interface AITokenStatus {
+  configured: boolean;
+  provider: AIProvider | null;
+}
+
+export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
+  anthropic: "Claude",
+  openai: "GPT",
+  googleai: "Gemini",
+  deepseek: "Deepseek",
+  llama: "Llama",
+};

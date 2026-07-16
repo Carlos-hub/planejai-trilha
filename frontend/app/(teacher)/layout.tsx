@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PlusCircle, Users, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, PlusCircle, Users, User, LogOut, Menu, X } from "lucide-react";
 import { useMe } from "@/lib/hooks";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,12 @@ const NAV = [
     label: "Turmas",
     icon: Users,
     match: (p: string) => p.startsWith("/turmas"),
+  },
+  {
+    href: "/perfil",
+    label: "Perfil",
+    icon: User,
+    match: (p: string) => p.startsWith("/perfil"),
   },
 ];
 

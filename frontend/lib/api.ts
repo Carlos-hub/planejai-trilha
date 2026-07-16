@@ -1,4 +1,4 @@
-import type { Student, Turma, ImportedStudent } from "./types";
+import type { AIProvider, AITokenStatus, Student, Turma, ImportedStudent } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -44,3 +44,14 @@ export async function importStudentsCSV(
     body: csvText,
   });
 }
+
+export const getAIToken = () => apiFetch<AITokenStatus>("/api/me/ai-token");
+
+export const saveAIToken = (provider: AIProvider, token: string) =>
+  apiFetch<{ provider: AIProvider; configured: boolean }>("/api/me/ai-token", {
+    method: "PUT",
+    body: JSON.stringify({ provider, token }),
+  });
+
+export const deleteAIToken = () =>
+  apiFetch<void>("/api/me/ai-token", { method: "DELETE" });

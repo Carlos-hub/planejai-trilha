@@ -26,6 +26,7 @@ export default function LessonDetailPage() {
   const [saving, setSaving] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [needsToken, setNeedsToken] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -87,6 +88,7 @@ export default function LessonDetailPage() {
   async function handleEnhance() {
     setEnhancing(true);
     setActionError(null);
+    setNeedsToken(false);
     try {
       const updated = await apiFetch<Lesson>(`/api/lessons/${lessonId}/enhance`, {
         method: "POST",
@@ -95,8 +97,12 @@ export default function LessonDetailPage() {
       setContent(toContent(updated));
       setBnccSkillId(updated.bncc_skill_id);
       setDuracao(updated.duracao);
-    } catch {
-      setActionError("Não foi possível aprimorar a aula com IA. Tente novamente.");
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("API 503")) {
+        setNeedsToken(true);
+      } else {
+        setActionError("Não foi possível aprimorar a aula com IA. Tente novamente.");
+      }
     } finally {
       setEnhancing(false);
     }
@@ -171,6 +177,19 @@ export default function LessonDetailPage() {
           </span>
         </div>
       </div>
+
+      {needsToken && (
+        <p
+          className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          Configure seu token de IA no{" "}
+          <Link href="/perfil" className="font-medium underline underline-offset-2">
+            Perfil
+          </Link>{" "}
+          para gerar com IA.
+        </p>
+      )}
 
       {actionError && (
         <p
