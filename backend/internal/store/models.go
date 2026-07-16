@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AiToken struct {
+	ID              int64              `json:"id"`
+	UserID          int64              `json:"user_id"`
+	Provider        string             `json:"provider"`
+	TokenCiphertext []byte             `json:"token_ciphertext"`
+	TokenNonce      []byte             `json:"token_nonce"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type AttemptAnswer struct {
 	ID               int64 `json:"id"`
 	StudentAttemptID int64 `json:"student_attempt_id"`
