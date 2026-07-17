@@ -4,41 +4,66 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/anthropic"
+	"github.com/tmc/langchaingo/llms/googleai"
+	"github.com/tmc/langchaingo/llms/openai"
 )
-
-// getenv returns the value of the environment variable key, or def if unset
-// or empty.
-func getenv(key, def string) string {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	return v
-}
 
 // lcGen is a Generator backed by a LangChainGo llms.Model. It is brand
 // agnostic: the concrete provider is selected at construction time via
-// NewLangChainGenerator, based on the LLM_PROVIDER env var.
+// NewGeneratorForProvider.
 type lcGen struct {
 	llm llms.Model
 }
 
-// NewLangChainGenerator builds a Generator using LangChainGo, selecting the
-// underlying provider/model from the LLM_PROVIDER / LLM_MODEL environment
-// variables. Only internal/lesson may import provider-specific packages.
-func NewLangChainGenerator() (Generator, error) {
-	provider := getenv("LLM_PROVIDER", "anthropic")
-	model := getenv("LLM_MODEL", "claude-opus-4-8")
+// defaultModels maps each supported provider to its fixed model. Adjust here
+// to change which model a provider uses.
+var defaultModels = map[string]string{
+	"anthropic": "claude-opus-4-8",
+	"openai":    "gpt-4o",
+	"googleai":  "gemini-2.0-flash",
+	"deepseek":  "deepseek-chat",
+	"llama":     "llama-3.3-70b-versatile",
+}
 
+// providerBaseURLs holds custom OpenAI-compatible base URLs for providers that
+// speak the OpenAI API but live elsewhere.
+var providerBaseURLs = map[string]string{
+	"deepseek": "https://api.deepseek.com",
+	"llama":    "https://api.groq.com/openai/v1",
+}
+
+// NewGeneratorForProvider builds a Generator for the given provider using the
+// supplied API key. The model is fixed per provider (defaultModels). Only
+// internal/lesson imports provider-specific packages.
+func NewGeneratorForProvider(ctx context.Context, provider, apiKey string) (Generator, error) {
+	model, ok := defaultModels[provider]
+	if !ok {
+		return nil, fmt.Errorf("provider não suportado: %s", provider)
+	}
 	switch provider {
 	case "anthropic":
-		m, err := anthropic.New(anthropic.WithModel(model))
+		m, err := anthropic.New(anthropic.WithModel(model), anthropic.WithToken(apiKey))
+		if err != nil {
+			return nil, err
+		}
+		return &lcGen{llm: m}, nil
+	case "openai", "deepseek", "llama":
+		opts := []openai.Option{openai.WithModel(model), openai.WithToken(apiKey)}
+		if base, ok := providerBaseURLs[provider]; ok {
+			opts = append(opts, openai.WithBaseURL(base))
+		}
+		m, err := openai.New(opts...)
+		if err != nil {
+			return nil, err
+		}
+		return &lcGen{llm: m}, nil
+	case "googleai":
+		m, err := googleai.New(ctx, googleai.WithAPIKey(apiKey), googleai.WithDefaultModel(model))
 		if err != nil {
 			return nil, err
 		}

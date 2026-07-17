@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/Carlos-hub/planejai/backend/internal/auth"
-	"github.com/Carlos-hub/planejai/backend/internal/lesson"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
 
@@ -48,7 +47,6 @@ func testBnccSkill(t *testing.T, d Deps) int64 {
 
 func TestLessonGenerateAndEnhance(t *testing.T) {
 	d := testDeps(t)
-	d.Gen = &lesson.MockGenerator{}
 	ctx := context.Background()
 
 	h, _ := auth.HashPassword("segredo123")
@@ -59,6 +57,9 @@ func TestLessonGenerateAndEnhance(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { d.Pool.Exec(ctx, "DELETE FROM users WHERE id=$1", u1.ID) })
+
+	captured := withAI(t, &d, u1.ID, "openai")
+	_ = captured // provider assertion optional here
 
 	skillID := testBnccSkill(t, d)
 
@@ -116,19 +117,48 @@ func TestLessonGenerateAndEnhance(t *testing.T) {
 	if !strings.HasSuffix(enhanced.Plano.Objetivos, "(aprimorado)") {
 		t.Fatalf("expected objetivos to be enhanced, got %s", enhanced.Plano.Objetivos)
 	}
+}
 
-	// generate with no Gen configured -> 503
-	noGenDeps := d
-	noGenDeps.Gen = nil
-	srv2 := httptest.NewServer(NewRouter(noGenDeps))
-	defer srv2.Close()
-	client2 := loginClient(t, srv2, "lesson-ai@x.com", "segredo123")
-	noGenResp, err := client2.Post(srv2.URL+"/api/lessons/generate", "application/json", strings.NewReader(genBody))
+func TestGenerateRequiresToken(t *testing.T) {
+	d := testDeps(t)
+	ctx := context.Background()
+	h, _ := auth.HashPassword("segredo123")
+	u, err := d.Store.CreateUser(ctx, store.CreateUserParams{Email: "needs-token@x.com", SenhaHash: h, Nome: "P"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer noGenResp.Body.Close()
-	if noGenResp.StatusCode != http.StatusServiceUnavailable {
-		t.Fatalf("want 503 when Gen is nil, got %d", noGenResp.StatusCode)
+	t.Cleanup(func() { d.Pool.Exec(ctx, "DELETE FROM users WHERE id=$1", u.ID) })
+	skillID := testBnccSkill(t, d)
+
+	srv := httptest.NewServer(NewRouter(d))
+	defer srv.Close()
+	client := loginClient(t, srv, "needs-token@x.com", "segredo123")
+
+	body := `{"bncc_skill_id":` + strconv.FormatInt(skillID, 10) + `,"duracao":30}`
+	// no token yet → 503
+	resp, err := client.Post(srv.URL+"/api/lessons/generate", "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("no-token generate = %d, want 503", resp.StatusCode)
+	}
+	resp.Body.Close()
+
+	// with token → 201 and provider passed to NewGen matches
+	captured := withAI(t, &d, u.ID, "googleai")
+	srv2 := httptest.NewServer(NewRouter(d))
+	defer srv2.Close()
+	client2 := loginClient(t, srv2, "needs-token@x.com", "segredo123")
+	resp2, err := client2.Post(srv2.URL+"/api/lessons/generate", "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp2.Body.Close()
+	if resp2.StatusCode != http.StatusCreated {
+		t.Fatalf("with-token generate = %d, want 201", resp2.StatusCode)
+	}
+	if *captured != "googleai" {
+		t.Fatalf("NewGen provider = %q, want googleai", *captured)
 	}
 }

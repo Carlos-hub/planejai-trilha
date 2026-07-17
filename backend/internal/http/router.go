@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Carlos-hub/planejai/backend/internal/lesson"
+	"github.com/Carlos-hub/planejai/backend/internal/secret"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
 
@@ -19,7 +21,8 @@ type Deps struct {
 	Store         *store.Queries
 	Pool          *pgxpool.Pool
 	SessionSecret string
-	Gen           lesson.Generator
+	Secret        *secret.Box
+	NewGen        func(ctx context.Context, provider, apiKey string) (lesson.Generator, error)
 }
 
 func NewRouter(d Deps) http.Handler {
@@ -38,10 +41,23 @@ func NewRouter(d Deps) http.Handler {
 		r.Get("/t/{code}/export.pdf", d.exportTrailPDF)
 		r.Post("/t/{code}/attempt", d.startAttempt)
 		r.Post("/attempts/{id}/answers", d.submitAnswers)
+		r.Post("/student/login", d.studentLogin)
+		r.Post("/student/logout", d.studentLogout)
+		r.Group(func(r chi.Router) {
+			r.Use(d.RequireStudent)
+			r.Post("/student/password", d.studentChangePassword)
+		})
 		r.Group(func(r chi.Router) {
 			r.Use(d.RequireAuth)
 			r.Get("/me", d.me)
 			r.Get("/bncc-skills", d.listBnccSkills)
+			r.Post("/turmas", d.createTurma)
+			r.Get("/turmas", d.listTurmas)
+			r.Get("/turmas/{id}", d.getTurma)
+			r.Patch("/turmas/{id}", d.patchTurma)
+			r.Delete("/turmas/{id}", d.deleteTurma)
+			r.Post("/turmas/{id}/students", d.addStudent)
+			r.Post("/turmas/{id}/students/import", d.importStudents)
 			r.Post("/lessons", d.createLesson)
 			r.Get("/lessons", d.listLessons)
 			r.Get("/lessons/{id}", d.getLesson)
@@ -50,6 +66,9 @@ func NewRouter(d Deps) http.Handler {
 			r.Post("/lessons/{id}/enhance", d.enhanceLesson)
 			r.Post("/trails/{id}/publish", d.publishTrail)
 			r.Get("/trails/{id}/stats", d.trailStats)
+			r.Put("/me/ai-token", d.putAIToken)
+			r.Get("/me/ai-token", d.getAIToken)
+			r.Delete("/me/ai-token", d.deleteAIToken)
 		})
 	})
 	return r

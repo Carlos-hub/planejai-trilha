@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { apiFetch } from "@/lib/api";
-import type { Lesson, PublishResult } from "@/lib/types";
+import { apiFetch, listTurmas } from "@/lib/api";
+import type { Lesson, PublishResult, Turma } from "@/lib/types";
 import { LessonEditor, type LessonContent } from "@/components/lesson-editor";
 import { Button } from "@/components/ui/button";
 import { ShareLinks } from "@/components/share-links";
@@ -26,9 +26,20 @@ export default function LessonDetailPage() {
   const [saving, setSaving] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [needsToken, setNeedsToken] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [turmas, setTurmas] = useState<Turma[]>([]);
+  const [selectedTurmaId, setSelectedTurmaId] = useState<string>("");
+
+  useEffect(() => {
+    listTurmas()
+      .then(setTurmas)
+      .catch(() => {
+        // turma list is optional context for publishing; ignore failures
+      });
+  }, []);
 
   const load = useCallback(() => {
     apiFetch<Lesson>(`/api/lessons/${lessonId}`)
@@ -77,6 +88,7 @@ export default function LessonDetailPage() {
   async function handleEnhance() {
     setEnhancing(true);
     setActionError(null);
+    setNeedsToken(false);
     try {
       const updated = await apiFetch<Lesson>(`/api/lessons/${lessonId}/enhance`, {
         method: "POST",
@@ -85,8 +97,12 @@ export default function LessonDetailPage() {
       setContent(toContent(updated));
       setBnccSkillId(updated.bncc_skill_id);
       setDuracao(updated.duracao);
-    } catch {
-      setActionError("Não foi possível aprimorar a aula com IA. Tente novamente.");
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("API 503")) {
+        setNeedsToken(true);
+      } else {
+        setActionError("Não foi possível aprimorar a aula com IA. Tente novamente.");
+      }
     } finally {
       setEnhancing(false);
     }
@@ -98,6 +114,9 @@ export default function LessonDetailPage() {
     try {
       const result = await apiFetch<PublishResult>(`/api/trails/${lessonId}/publish`, {
         method: "POST",
+        body: JSON.stringify({
+          turma_id: selectedTurmaId ? Number(selectedTurmaId) : null,
+        }),
       });
       setPublishResult(result);
     } catch {
@@ -159,6 +178,19 @@ export default function LessonDetailPage() {
         </div>
       </div>
 
+      {needsToken && (
+        <p
+          className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          Configure seu token de IA no{" "}
+          <Link href="/perfil" className="font-medium underline underline-offset-2">
+            Perfil
+          </Link>{" "}
+          para gerar com IA.
+        </p>
+      )}
+
       {actionError && (
         <p
           className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
@@ -200,7 +232,23 @@ export default function LessonDetailPage() {
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {turmas.length > 0 && (
+              <select
+                value={selectedTurmaId}
+                onChange={(e) => setSelectedTurmaId(e.target.value)}
+                disabled={publishing}
+                aria-label="Turma para publicar"
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="">Sem turma vinculada</option>
+                {turmas.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nome}
+                  </option>
+                ))}
+              </select>
+            )}
             <Button
               type="button"
               onClick={handlePublish}

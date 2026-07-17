@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AiToken struct {
+	ID              int64              `json:"id"`
+	UserID          int64              `json:"user_id"`
+	Provider        string             `json:"provider"`
+	TokenCiphertext []byte             `json:"token_ciphertext"`
+	TokenNonce      []byte             `json:"token_nonce"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type AttemptAnswer struct {
 	ID               int64 `json:"id"`
 	StudentAttemptID int64 `json:"student_attempt_id"`
@@ -63,6 +73,16 @@ type Session struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type Student struct {
+	ID        int64              `json:"id"`
+	TurmaID   int64              `json:"turma_id"`
+	Nome      string             `json:"nome"`
+	Usuario   string             `json:"usuario"`
+	SenhaHash string             `json:"senha_hash"`
+	Matricula *string            `json:"matricula"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type StudentAttempt struct {
 	ID           int64              `json:"id"`
 	StudyTrailID int64              `json:"study_trail_id"`
@@ -70,6 +90,14 @@ type StudentAttempt struct {
 	Pontos       int32              `json:"pontos"`
 	ConcluidoEm  pgtype.Timestamptz `json:"concluido_em"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	StudentID    *int64             `json:"student_id"`
+}
+
+type StudentSession struct {
+	ID        string             `json:"id"`
+	StudentID int64              `json:"student_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type StudyTrail struct {
@@ -77,6 +105,7 @@ type StudyTrail struct {
 	LessonPlanID int64              `json:"lesson_plan_id"`
 	Codigo       *string            `json:"codigo"`
 	PublicadaEm  pgtype.Timestamptz `json:"publicada_em"`
+	TurmaID      *int64             `json:"turma_id"`
 }
 
 type TrailTopic struct {
@@ -85,6 +114,15 @@ type TrailTopic struct {
 	Ordem        int32  `json:"ordem"`
 	Titulo       string `json:"titulo"`
 	Resumo       string `json:"resumo"`
+}
+
+type Turma struct {
+	ID        int64              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	Nome      string             `json:"nome"`
+	Etapa     string             `json:"etapa"`
+	Anos      []int32            `json:"anos"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type User struct {

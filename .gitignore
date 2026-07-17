@@ -9,3 +9,8 @@
 
 # local compose override
 docker-compose.override.yml
+
+# local docker-build workaround (network-blocked module fetch)
+backend/vendor/
+backend/Dockerfile.vendor
+frontend/Dockerfile.vendor

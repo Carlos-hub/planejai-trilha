@@ -23,6 +23,7 @@ export default function NewLessonPage() {
   const [duracao, setDuracao] = useState(50);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsToken, setNeedsToken] = useState(false);
 
   function body() {
     return JSON.stringify({
@@ -37,6 +38,7 @@ export default function NewLessonPage() {
   async function handleManualSave() {
     setSaving(true);
     setError(null);
+    setNeedsToken(false);
     try {
       const lesson = await apiFetch<Lesson>("/api/lessons", {
         method: "POST",
@@ -56,14 +58,19 @@ export default function NewLessonPage() {
     }
     setSaving(true);
     setError(null);
+    setNeedsToken(false);
     try {
       const lesson = await apiFetch<Lesson>("/api/lessons/generate", {
         method: "POST",
         body: JSON.stringify({ bncc_skill_id: bnccSkillId, duracao }),
       });
       router.push(`/lessons/${lesson.id}`);
-    } catch {
-      setError("Falha ao gerar a aula com IA. Tente novamente.");
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("API 503")) {
+        setNeedsToken(true);
+      } else {
+        setError("Falha ao gerar a aula com IA. Tente novamente.");
+      }
       setSaving(false);
     }
   }
@@ -71,6 +78,7 @@ export default function NewLessonPage() {
   async function handleEnhance() {
     setSaving(true);
     setError(null);
+    setNeedsToken(false);
     try {
       const lesson = await apiFetch<Lesson>("/api/lessons", {
         method: "POST",
@@ -80,8 +88,12 @@ export default function NewLessonPage() {
         method: "POST",
       });
       router.push(`/lessons/${lesson.id}`);
-    } catch {
-      setError("Não foi possível aprimorar o rascunho. Tente novamente.");
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("API 503")) {
+        setNeedsToken(true);
+      } else {
+        setError("Não foi possível aprimorar o rascunho. Tente novamente.");
+      }
       setSaving(false);
     }
   }
@@ -123,6 +135,19 @@ export default function NewLessonPage() {
           <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         </div>
       </div>
+
+      {needsToken && (
+        <p
+          className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          role="alert"
+        >
+          Configure seu token de IA no{" "}
+          <Link href="/perfil" className="font-medium underline underline-offset-2">
+            Perfil
+          </Link>{" "}
+          para gerar com IA.
+        </p>
+      )}
 
       {error && (
         <p

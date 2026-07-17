@@ -12,7 +12,7 @@ import (
 )
 
 const completeAttempt = `-- name: CompleteAttempt :one
-UPDATE student_attempts SET pontos=$2, concluido_em=now() WHERE id=$1 RETURNING id, study_trail_id, nome_aluno, pontos, concluido_em, created_at
+UPDATE student_attempts SET pontos=$2, concluido_em=now() WHERE id=$1 RETURNING id, study_trail_id, nome_aluno, pontos, concluido_em, created_at, student_id
 `
 
 type CompleteAttemptParams struct {
@@ -30,21 +30,23 @@ func (q *Queries) CompleteAttempt(ctx context.Context, arg CompleteAttemptParams
 		&i.Pontos,
 		&i.ConcluidoEm,
 		&i.CreatedAt,
+		&i.StudentID,
 	)
 	return i, err
 }
 
 const createAttempt = `-- name: CreateAttempt :one
-INSERT INTO student_attempts (study_trail_id, nome_aluno) VALUES ($1,$2) RETURNING id, study_trail_id, nome_aluno, pontos, concluido_em, created_at
+INSERT INTO student_attempts (study_trail_id, nome_aluno, student_id) VALUES ($1,$2,$3) RETURNING id, study_trail_id, nome_aluno, pontos, concluido_em, created_at, student_id
 `
 
 type CreateAttemptParams struct {
 	StudyTrailID int64  `json:"study_trail_id"`
 	NomeAluno    string `json:"nome_aluno"`
+	StudentID    *int64 `json:"student_id"`
 }
 
 func (q *Queries) CreateAttempt(ctx context.Context, arg CreateAttemptParams) (StudentAttempt, error) {
-	row := q.db.QueryRow(ctx, createAttempt, arg.StudyTrailID, arg.NomeAluno)
+	row := q.db.QueryRow(ctx, createAttempt, arg.StudyTrailID, arg.NomeAluno, arg.StudentID)
 	var i StudentAttempt
 	err := row.Scan(
 		&i.ID,
@@ -53,12 +55,13 @@ func (q *Queries) CreateAttempt(ctx context.Context, arg CreateAttemptParams) (S
 		&i.Pontos,
 		&i.ConcluidoEm,
 		&i.CreatedAt,
+		&i.StudentID,
 	)
 	return i, err
 }
 
 const getAttempt = `-- name: GetAttempt :one
-SELECT id, study_trail_id, nome_aluno, pontos, concluido_em, created_at FROM student_attempts WHERE id=$1
+SELECT id, study_trail_id, nome_aluno, pontos, concluido_em, created_at, student_id FROM student_attempts WHERE id=$1
 `
 
 func (q *Queries) GetAttempt(ctx context.Context, id int64) (StudentAttempt, error) {
@@ -71,6 +74,7 @@ func (q *Queries) GetAttempt(ctx context.Context, id int64) (StudentAttempt, err
 		&i.Pontos,
 		&i.ConcluidoEm,
 		&i.CreatedAt,
+		&i.StudentID,
 	)
 	return i, err
 }

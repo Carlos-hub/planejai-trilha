@@ -391,6 +391,20 @@ func (d Deps) publishTrail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
+
+	var body struct {
+		TurmaID *int64 `json:"turma_id"`
+	}
+	// body is optional; ignore decode errors on empty body
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	if body.TurmaID != nil {
+		turma, err := d.Store.GetTurma(ctx, *body.TurmaID)
+		if err != nil || turma.UserID != userID {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "turma não encontrada"})
+			return
+		}
+	}
+
 	trail, err := d.Store.GetTrailByLesson(ctx, lp.ID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -421,6 +435,13 @@ func (d Deps) publishTrail(w http.ResponseWriter, r *http.Request) {
 	if codigo == "" {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "não foi possível gerar um código único"})
 		return
+	}
+
+	if body.TurmaID != nil {
+		if err := d.Store.SetTrailTurma(ctx, store.SetTrailTurmaParams{ID: trail.ID, TurmaID: body.TurmaID}); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao vincular turma"})
+			return
+		}
 	}
 
 	baseURL := getenv("PUBLIC_BASE_URL", "http://localhost:3000")
@@ -516,11 +537,6 @@ func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if d.Gen == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "gerador de IA indisponível"})
-		return
-	}
-
 	var req generateLessonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "corpo inválido"})
@@ -531,6 +547,16 @@ func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
 	skill, err := d.Store.GetBnccSkill(ctx, req.BnccSkillID)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "habilidade BNCC inválida"})
+		return
+	}
+
+	gen, err := d.generatorForUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, errNoAIToken) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "configure seu token de IA no seu perfil"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao preparar gerador de IA"})
 		return
 	}
 
@@ -547,7 +573,7 @@ func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := d.Gen.Generate(ctx, skill, req.Duracao)
+	data, err := gen.Generate(ctx, skill, req.Duracao)
 	if err != nil {
 		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "falha na geração"})
@@ -648,12 +674,17 @@ func (d Deps) enhanceLesson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if d.Gen == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "gerador de IA indisponível"})
+	ctx := r.Context()
+	gen, err := d.generatorForUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, errNoAIToken) {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "configure seu token de IA no seu perfil"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao preparar gerador de IA"})
 		return
 	}
 
-	ctx := r.Context()
 	draft, err := d.lessonToData(ctx, lp)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao carregar aula"})
@@ -669,7 +700,7 @@ func (d Deps) enhanceLesson(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	enhanced, err := d.Gen.Enhance(ctx, draft, skill)
+	enhanced, err := gen.Enhance(ctx, draft, skill)
 	if err != nil {
 		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "falha no aprimoramento"})

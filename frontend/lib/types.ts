@@ -8,6 +8,14 @@ export interface Me {
   nome: string;
 }
 
+// --- student auth (student_handlers.go: login) ---
+export interface Student {
+  id: number;
+  nome: string;
+  usuario: string;
+  turma_id: number;
+}
+
 // --- lesson content shared shapes (lesson_handlers.go: lessonResponse.Trilha/Plano) ---
 export interface Topico {
   titulo: string;
@@ -78,6 +86,22 @@ export interface PublishResult {
   publica_url: string;
 }
 
+// --- turma_handlers.go: turmaResponse (GET/POST /api/turmas) ---
+export interface Turma {
+  id: number;
+  nome: string;
+  etapa: string;
+  anos: number[];
+}
+
+// --- turma_handlers.go: importStudentsResponse (POST /api/turmas/:id/students/import) ---
+export interface ImportedStudent {
+  nome: string;
+  matricula: string | null;
+  usuario: string;
+  senha: string;
+}
+
 // --- lesson_handlers.go: tentativaStats / trailStatsResponse (GET /api/trails/:id/stats) ---
 export interface Tentativa {
   nome_aluno: string;
@@ -127,3 +151,19 @@ export interface AttemptResult {
   acertos: number;
   total: number;
 }
+
+// --- ai_token_handlers.go: aiTokenStatusResponse (GET/PUT /api/me/ai-token) ---
+export type AIProvider = "anthropic" | "openai" | "googleai" | "deepseek" | "llama";
+
+export interface AITokenStatus {
+  configured: boolean;
+  provider: AIProvider | null;
+}
+
+export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
+  anthropic: "Claude",
+  openai: "GPT",
+  googleai: "Gemini",
+  deepseek: "Deepseek",
+  llama: "Llama",
+};

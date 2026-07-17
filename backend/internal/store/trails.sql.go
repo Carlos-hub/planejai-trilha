@@ -10,7 +10,7 @@ import (
 )
 
 const createTrail = `-- name: CreateTrail :one
-INSERT INTO study_trails (lesson_plan_id) VALUES ($1) RETURNING id, lesson_plan_id, codigo, publicada_em
+INSERT INTO study_trails (lesson_plan_id) VALUES ($1) RETURNING id, lesson_plan_id, codigo, publicada_em, turma_id
 `
 
 func (q *Queries) CreateTrail(ctx context.Context, lessonPlanID int64) (StudyTrail, error) {
@@ -21,6 +21,7 @@ func (q *Queries) CreateTrail(ctx context.Context, lessonPlanID int64) (StudyTra
 		&i.LessonPlanID,
 		&i.Codigo,
 		&i.PublicadaEm,
+		&i.TurmaID,
 	)
 	return i, err
 }
@@ -35,7 +36,7 @@ func (q *Queries) DeleteTopics(ctx context.Context, studyTrailID int64) error {
 }
 
 const getTrailByCode = `-- name: GetTrailByCode :one
-SELECT id, lesson_plan_id, codigo, publicada_em FROM study_trails WHERE codigo=$1
+SELECT id, lesson_plan_id, codigo, publicada_em, turma_id FROM study_trails WHERE codigo=$1
 `
 
 func (q *Queries) GetTrailByCode(ctx context.Context, codigo *string) (StudyTrail, error) {
@@ -46,12 +47,13 @@ func (q *Queries) GetTrailByCode(ctx context.Context, codigo *string) (StudyTrai
 		&i.LessonPlanID,
 		&i.Codigo,
 		&i.PublicadaEm,
+		&i.TurmaID,
 	)
 	return i, err
 }
 
 const getTrailByLesson = `-- name: GetTrailByLesson :one
-SELECT id, lesson_plan_id, codigo, publicada_em FROM study_trails WHERE lesson_plan_id=$1
+SELECT id, lesson_plan_id, codigo, publicada_em, turma_id FROM study_trails WHERE lesson_plan_id=$1
 `
 
 func (q *Queries) GetTrailByLesson(ctx context.Context, lessonPlanID int64) (StudyTrail, error) {
@@ -62,6 +64,7 @@ func (q *Queries) GetTrailByLesson(ctx context.Context, lessonPlanID int64) (Stu
 		&i.LessonPlanID,
 		&i.Codigo,
 		&i.PublicadaEm,
+		&i.TurmaID,
 	)
 	return i, err
 }
@@ -118,7 +121,7 @@ func (q *Queries) ListTopics(ctx context.Context, studyTrailID int64) ([]TrailTo
 }
 
 const publishTrail = `-- name: PublishTrail :one
-UPDATE study_trails SET codigo=$2, publicada_em=now() WHERE id=$1 RETURNING id, lesson_plan_id, codigo, publicada_em
+UPDATE study_trails SET codigo=$2, publicada_em=now() WHERE id=$1 RETURNING id, lesson_plan_id, codigo, publicada_em, turma_id
 `
 
 type PublishTrailParams struct {
@@ -134,6 +137,21 @@ func (q *Queries) PublishTrail(ctx context.Context, arg PublishTrailParams) (Stu
 		&i.LessonPlanID,
 		&i.Codigo,
 		&i.PublicadaEm,
+		&i.TurmaID,
 	)
 	return i, err
+}
+
+const setTrailTurma = `-- name: SetTrailTurma :exec
+UPDATE study_trails SET turma_id=$2 WHERE id=$1
+`
+
+type SetTrailTurmaParams struct {
+	ID      int64  `json:"id"`
+	TurmaID *int64 `json:"turma_id"`
+}
+
+func (q *Queries) SetTrailTurma(ctx context.Context, arg SetTrailTurmaParams) error {
+	_, err := q.db.Exec(ctx, setTrailTurma, arg.ID, arg.TurmaID)
+	return err
 }

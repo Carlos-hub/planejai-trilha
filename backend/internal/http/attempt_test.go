@@ -257,3 +257,82 @@ func TestAttemptScoring(t *testing.T) {
 		t.Fatalf("want %d answer rows (no duplicates), got %d", result.Total, answerCount)
 	}
 }
+
+// TestSubmitAnswersGatedOwnership verifies the I2 fix: for a gated attempt
+// (attempt.StudentID != nil), only the owning student's session may submit
+// answers — an anonymous request gets 401, another enrolled student's
+// session gets 403, and the owning student's session gets 200.
+func TestSubmitAnswersGatedOwnership(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "profGateOwn-turma@t.com")
+
+	// turma with two students
+	tb, _ := json.Marshal(map[string]any{"nome": "7C"})
+	tr := httptest.NewRequest("POST", "/api/turmas", bytes.NewReader(tb))
+	tr.AddCookie(cookie)
+	tw := httptest.NewRecorder()
+	r.ServeHTTP(tw, tr)
+	var turma struct {
+		ID int64 `json:"id"`
+	}
+	json.Unmarshal(tw.Body.Bytes(), &turma)
+
+	code := publishTrailToTurma(t, d, r, cookie, turma.ID)
+
+	hash, _ := auth.HashPassword("aluno123")
+	owner, _ := d.Store.CreateStudent(context.Background(), store.CreateStudentParams{TurmaID: turma.ID, Nome: "Owner", Usuario: "owner.gateown.cc", SenhaHash: hash})
+	other, _ := d.Store.CreateStudent(context.Background(), store.CreateStudentParams{TurmaID: turma.ID, Nome: "Other", Usuario: "other.gateown.cc", SenhaHash: hash})
+
+	ownerSid, _ := auth.NewSessionID()
+	d.Store.CreateStudentSession(context.Background(), store.CreateStudentSessionParams{ID: ownerSid, StudentID: owner.ID, ExpiresAt: pgTime(timePlus24h())})
+	otherSid, _ := auth.NewSessionID()
+	d.Store.CreateStudentSession(context.Background(), store.CreateStudentSessionParams{ID: otherSid, StudentID: other.ID, ExpiresAt: pgTime(timePlus24h())})
+
+	// owner starts the attempt (as the logged-in owner student).
+	startReq := httptest.NewRequest("POST", "/api/t/"+code+"/attempt", strings.NewReader(`{}`))
+	startReq.AddCookie(&http.Cookie{Name: "student_sid", Value: ownerSid})
+	startW := httptest.NewRecorder()
+	r.ServeHTTP(startW, startReq)
+	if startW.Code != http.StatusCreated {
+		t.Fatalf("start attempt = %d, want 201, body=%s", startW.Code, startW.Body)
+	}
+	var started struct {
+		AttemptID int64 `json:"attempt_id"`
+	}
+	json.Unmarshal(startW.Body.Bytes(), &started)
+	attemptIDStr := itoa(started.AttemptID)
+	t.Cleanup(func() {
+		ctx := context.Background()
+		d.Pool.Exec(ctx, "DELETE FROM attempt_answers WHERE student_attempt_id=$1", started.AttemptID)
+		d.Pool.Exec(ctx, "DELETE FROM student_attempts WHERE id=$1", started.AttemptID)
+	})
+
+	submitBody := `{"answers":[]}`
+
+	// anonymous submit -> 401
+	anonReq := httptest.NewRequest("POST", "/api/attempts/"+attemptIDStr+"/answers", strings.NewReader(submitBody))
+	anonW := httptest.NewRecorder()
+	r.ServeHTTP(anonW, anonReq)
+	if anonW.Code != http.StatusUnauthorized {
+		t.Fatalf("anon submit = %d, want 401, body=%s", anonW.Code, anonW.Body)
+	}
+
+	// different enrolled student's session -> 403
+	otherReq := httptest.NewRequest("POST", "/api/attempts/"+attemptIDStr+"/answers", strings.NewReader(submitBody))
+	otherReq.AddCookie(&http.Cookie{Name: "student_sid", Value: otherSid})
+	otherW := httptest.NewRecorder()
+	r.ServeHTTP(otherW, otherReq)
+	if otherW.Code != http.StatusForbidden {
+		t.Fatalf("other-student submit = %d, want 403, body=%s", otherW.Code, otherW.Body)
+	}
+
+	// owning student's session -> 200
+	ownerReq := httptest.NewRequest("POST", "/api/attempts/"+attemptIDStr+"/answers", strings.NewReader(submitBody))
+	ownerReq.AddCookie(&http.Cookie{Name: "student_sid", Value: ownerSid})
+	ownerW := httptest.NewRecorder()
+	r.ServeHTTP(ownerW, ownerReq)
+	if ownerW.Code != http.StatusOK {
+		t.Fatalf("owner submit = %d, want 200, body=%s", ownerW.Code, ownerW.Body)
+	}
+}

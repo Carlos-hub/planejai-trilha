@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import type { PublicTrail } from "@/lib/types";
 import { NameGate, attemptStorageKey } from "@/components/name-gate";
@@ -32,6 +32,7 @@ function readStoredAttempt(code: string): StoredAttempt | null {
 export default function PublicTrailPage() {
   const params = useParams<{ code: string }>();
   const code = params.code;
+  const router = useRouter();
 
   const [trail, setTrail] = useState<PublicTrail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,10 @@ export default function PublicTrailPage() {
       .catch((err) => {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : "";
-        if (message.startsWith("API 404")) {
+        if (message.startsWith("API 401")) {
+          router.push(`/aluno/login?next=/t/${code}`);
+          return;
+        } else if (message.startsWith("API 404")) {
           setNotFound(true);
         } else {
           setLoadError("Não foi possível carregar esta trilha. Tente novamente mais tarde.");
