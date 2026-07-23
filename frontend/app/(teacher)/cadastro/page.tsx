@@ -1,45 +1,36 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, Route, Users } from "lucide-react";
-import { apiFetch } from "@/lib/api";
-import type { Me } from "@/lib/types";
+import { register } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandLockup, BrandMark } from "@/components/brand-mark";
 
-export default function LoginPage() {
+export default function CadastroPage() {
   const router = useRouter();
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [justRegistered, setJustRegistered] = useState(false);
-
-  // Show a success banner when arriving from signup (?cadastro=1). Read from
-  // the URL client-side to avoid a Suspense boundary around useSearchParams.
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("cadastro") === "1") {
-      setJustRegistered(true);
-    }
-  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await apiFetch<Me>("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, senha }),
-      });
-      router.push("/");
-    } catch {
-      setError("E-mail ou senha incorretos. Tente novamente.");
-    } finally {
+      await register(nome, email, senha);
+      router.push("/login?cadastro=1");
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("API 409")) {
+        setError("Este e-mail já está cadastrado. Tente entrar.");
+      } else {
+        setError("Não foi possível criar a conta. Tente novamente.");
+      }
       setSubmitting(false);
     }
   }
@@ -56,11 +47,11 @@ export default function LoginPage() {
         <div className="relative">
           <BrandMark className="size-10 text-sidebar-primary" />
           <h2 className="mt-5 max-w-sm font-[family-name:var(--font-display)] text-3xl font-semibold leading-tight text-sidebar-accent-foreground">
-            Planeje uma vez. Ensine o aluno inteiro.
+            Comece a planejar em minutos.
           </h2>
           <p className="mt-3 max-w-sm text-sm text-sidebar-foreground/70">
-            Aulas alinhadas à BNCC que viram trilhas de estudo com quiz
-            autocorrigido — sem trabalho duplicado.
+            Crie sua conta de professor e transforme aulas da BNCC em trilhas de
+            estudo com quiz autocorrigido.
           </p>
           <ul className="mt-8 flex flex-col gap-3 text-sm text-sidebar-foreground/80">
             <Feature icon={Sparkles} text="Plano de aula gerado com IA" />
@@ -80,23 +71,23 @@ export default function LoginPage() {
             <BrandLockup markClassName="text-primary" />
           </div>
 
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Entrar
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Criar conta</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Acesse sua conta de professor.
+            Cadastre-se como professor.
           </p>
 
-          {justRegistered && (
-            <p
-              className="mt-6 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary"
-              role="status"
-            >
-              Conta criada! Faça login para começar.
-            </p>
-          )}
-
           <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="nome">Nome</Label>
+              <Input
+                id="nome"
+                autoComplete="name"
+                placeholder="Seu nome"
+                required
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+              />
+            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">E-mail</Label>
               <Input
@@ -114,9 +105,10 @@ export default function LoginPage() {
               <Input
                 id="senha"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 placeholder="••••••••"
                 required
+                minLength={8}
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
               />
@@ -137,17 +129,17 @@ export default function LoginPage() {
               className="mt-1 w-full"
               disabled={submitting}
             >
-              {submitting ? "Entrando…" : "Entrar"}
+              {submitting ? "Criando…" : "Criar conta"}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Não tem conta?{" "}
+            Já tem conta?{" "}
             <Link
-              href="/cadastro"
+              href="/login"
               className="font-medium text-primary underline underline-offset-2"
             >
-              Criar conta
+              Entrar
             </Link>
           </p>
         </div>
@@ -164,8 +156,8 @@ function Feature({
   text: string;
 }) {
   return (
-    <li className="flex items-center gap-3">
-      <span className="flex size-8 items-center justify-center rounded-lg bg-sidebar-accent/60 text-sidebar-primary">
+    <li className="flex items-center gap-2.5">
+      <span className="flex size-7 items-center justify-center rounded-md bg-sidebar-primary/15 text-sidebar-primary">
         <Icon className="size-4" />
       </span>
       {text}

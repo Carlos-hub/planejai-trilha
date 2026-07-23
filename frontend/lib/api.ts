@@ -32,6 +32,15 @@ export function studentLogin(usuario: string, senha: string): Promise<Student> {
   });
 }
 
+// register creates a professor account. It does NOT log the user in — the
+// caller sends them to the login page afterward.
+export function register(nome: string, email: string, senha: string) {
+  return apiFetch<{ id: number; email: string; nome: string }>(
+    "/api/auth/register",
+    { method: "POST", body: JSON.stringify({ nome, email, senha }) }
+  );
+}
+
 export const listTurmas = () => apiFetch<Turma[]>("/api/turmas");
 
 export const getTurma = (id: number) =>
