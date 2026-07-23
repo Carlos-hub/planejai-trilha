@@ -153,3 +153,55 @@ func (d Deps) detachTurmaLesson(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// reorderTurmaLessons handles PATCH /api/turmas/:id/lessons: renumbers the
+// turma's aulas to match the given ordered_ids, rejecting when the submitted
+// set does not exactly match the turma's current aulas.
+func (d Deps) reorderTurmaLessons(w http.ResponseWriter, r *http.Request) {
+	userID, ok := userIDFromContext(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
+		return
+	}
+	turma, ok := d.ownedTurma(w, r, userID)
+	if !ok {
+		return
+	}
+	var in struct {
+		OrderedIDs []int64 `json:"ordered_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "json inválido"})
+		return
+	}
+	ctx := r.Context()
+	current, err := d.Store.ListTurmaLessons(ctx, turma.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro"})
+		return
+	}
+	// O conjunto enviado deve ser exatamente o conjunto atual (mesmos ids).
+	want := map[int64]bool{}
+	for _, row := range current {
+		want[row.LessonPlanID] = true
+	}
+	if len(in.OrderedIDs) != len(current) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "lista de aulas não confere"})
+		return
+	}
+	seen := map[int64]bool{}
+	for _, id := range in.OrderedIDs {
+		if !want[id] || seen[id] {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "lista de aulas não confere"})
+			return
+		}
+		seen[id] = true
+	}
+	if err := d.Store.SetTurmaLessonOrder(ctx, store.SetTurmaLessonOrderParams{
+		TurmaID: turma.ID, LessonPlanIds: in.OrderedIDs,
+	}); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao reordenar"})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

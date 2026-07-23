@@ -110,6 +110,46 @@ func TestDetachTurmaLessonRenumbers(t *testing.T) {
 	}
 }
 
+func TestReorderTurmaLessons(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "reorder-task6-"+itoa(time.Now().UnixNano())+"@t.com")
+	uid := userIDFromCookie(t, d, cookie)
+	turmaID := seedTurma(t, d, uid, "6A-reorder")
+	l1 := seedReadyLesson(t, d, uid)
+	l2 := seedReadyLesson(t, d, uid)
+	for _, id := range []int64{l1, l2} {
+		b, _ := json.Marshal(map[string]any{"lesson_plan_id": id})
+		req := httptest.NewRequest("POST", "/api/turmas/"+itoa(turmaID)+"/lessons", bytes.NewReader(b))
+		req.AddCookie(cookie)
+		r.ServeHTTP(httptest.NewRecorder(), req)
+	}
+
+	// inverter ordem
+	body, _ := json.Marshal(map[string]any{"ordered_ids": []int64{l2, l1}})
+	req := httptest.NewRequest("PATCH", "/api/turmas/"+itoa(turmaID)+"/lessons", bytes.NewReader(body))
+	req.AddCookie(cookie)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("reorder status=%d body=%s", w.Code, w.Body)
+	}
+	rows, _ := d.Store.ListTurmaLessons(context.Background(), turmaID)
+	if rows[0].LessonPlanID != l2 || rows[1].LessonPlanID != l1 {
+		t.Fatalf("order not applied: %+v", rows)
+	}
+
+	// conjunto que não bate → 400
+	bad, _ := json.Marshal(map[string]any{"ordered_ids": []int64{l1}})
+	reqBad := httptest.NewRequest("PATCH", "/api/turmas/"+itoa(turmaID)+"/lessons", bytes.NewReader(bad))
+	reqBad.AddCookie(cookie)
+	wBad := httptest.NewRecorder()
+	r.ServeHTTP(wBad, reqBad)
+	if wBad.Code != http.StatusBadRequest {
+		t.Fatalf("mismatched set status=%d, want 400", wBad.Code)
+	}
+}
+
 func userIDFromCookie(t *testing.T, d Deps, c *http.Cookie) int64 {
 	t.Helper()
 	s, err := d.Store.GetSession(context.Background(), c.Value)
