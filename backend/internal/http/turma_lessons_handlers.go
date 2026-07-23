@@ -36,22 +36,6 @@ func (d Deps) ensureTrailCodigo(ctx context.Context, trail store.StudyTrail) (st
 	return "", errors.New("não foi possível gerar um código único")
 }
 
-// ownedTurma loads a turma and confirms it belongs to userID. Writes 404 and
-// returns ok=false otherwise.
-func (d Deps) ownedTurma(w http.ResponseWriter, r *http.Request, userID int64) (store.Turma, bool) {
-	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "turma não encontrada"})
-		return store.Turma{}, false
-	}
-	turma, err := d.Store.GetTurma(r.Context(), id)
-	if err != nil || turma.UserID != userID {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "turma não encontrada"})
-		return store.Turma{}, false
-	}
-	return turma, true
-}
-
 // attachTurmaLesson handles POST /api/turmas/:id/lessons: attaches an
 // already-ready lesson plan to the turma, assigning it the next ordem and
 // ensuring its trail has a public code.
@@ -61,7 +45,7 @@ func (d Deps) attachTurmaLesson(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
 		return
 	}
-	turma, ok := d.ownedTurma(w, r, userID)
+	turma, ok := d.loadOwnedTurma(w, r, userID)
 	if !ok {
 		return
 	}
@@ -122,7 +106,7 @@ func (d Deps) detachTurmaLesson(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
 		return
 	}
-	turma, ok := d.ownedTurma(w, r, userID)
+	turma, ok := d.loadOwnedTurma(w, r, userID)
 	if !ok {
 		return
 	}
@@ -163,7 +147,7 @@ func (d Deps) reorderTurmaLessons(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
 		return
 	}
-	turma, ok := d.ownedTurma(w, r, userID)
+	turma, ok := d.loadOwnedTurma(w, r, userID)
 	if !ok {
 		return
 	}

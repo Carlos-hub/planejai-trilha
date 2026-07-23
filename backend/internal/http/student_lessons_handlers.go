@@ -1,7 +1,10 @@
 package http
 
 import (
+	"errors"
 	"net/http"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
@@ -24,6 +27,10 @@ func (d Deps) studentLessons(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	student, err := d.Store.GetStudent(ctx, studentID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
+			return
+		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro"})
 		return
 	}

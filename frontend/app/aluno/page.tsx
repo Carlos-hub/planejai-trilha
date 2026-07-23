@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Lock, ArrowRight, CheckCircle2 } from "lucide-react";
 import { getStudentLessons } from "@/lib/api";
 import type { StudentAula } from "@/lib/types";
@@ -9,12 +10,19 @@ import type { StudentAula } from "@/lib/types";
 export default function AlunoHomePage() {
   const [aulas, setAulas] = useState<StudentAula[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     getStudentLessons()
       .then((data) => setAulas(data.aulas))
-      .catch(() => setError("Não foi possível carregar suas aulas."));
-  }, []);
+      .catch((err) => {
+        if (err instanceof Error && err.message.startsWith("API 401")) {
+          router.push("/aluno/login?next=/aluno");
+          return;
+        }
+        setError("Não foi possível carregar suas aulas.");
+      });
+  }, [router]);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8">
@@ -44,11 +52,13 @@ export default function AlunoHomePage() {
       {aulas && aulas.length > 0 && (
         <ol className="flex flex-col gap-2">
           {aulas.map((a) => {
-            const state = a.concluido
-              ? "done"
-              : a.unlocked
-                ? "open"
-                : "locked";
+            const state = !a.codigo
+              ? "locked"
+              : a.concluido
+                ? "done"
+                : a.unlocked
+                  ? "open"
+                  : "locked";
             const inner = (
               <div
                 className={`flex items-center gap-3 rounded-xl border p-4 ${

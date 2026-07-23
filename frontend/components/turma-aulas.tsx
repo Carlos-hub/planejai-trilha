@@ -34,6 +34,7 @@ export function TurmaAulas({
       setOptions(all.filter((l) => l.status === "pronto" && !inTurma.has(l.id)));
     } catch {
       setError("Não foi possível carregar suas aulas.");
+      setPicking(false);
     }
   }
 
@@ -54,9 +55,12 @@ export function TurmaAulas({
 
   async function remove(lessonId: number) {
     setBusy(true);
+    setError(null);
     try {
       await detachTurmaLesson(turmaId, lessonId);
       onChanged();
+    } catch {
+      setError("Não foi possível remover a aula.");
     } finally {
       setBusy(false);
     }
@@ -68,9 +72,12 @@ export function TurmaAulas({
     const ids = aulas.map((a) => a.lesson_plan_id);
     [ids[index], ids[next]] = [ids[next], ids[index]];
     setBusy(true);
+    setError(null);
     try {
       await reorderTurmaLessons(turmaId, ids);
       onChanged();
+    } catch {
+      setError("Não foi possível reordenar as aulas.");
     } finally {
       setBusy(false);
     }
