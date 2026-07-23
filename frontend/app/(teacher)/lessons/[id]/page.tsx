@@ -35,7 +35,7 @@ export default function LessonDetailPage() {
 
   useEffect(() => {
     listTurmas()
-      .then(setTurmas)
+      .then((data) => setTurmas(data ?? []))
       .catch(() => {
         // turma list is optional context for publishing; ignore failures
       });
