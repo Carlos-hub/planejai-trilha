@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/Carlos-hub/planejai/backend/internal/auth"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
 
@@ -43,21 +42,4 @@ func BNCC(ctx context.Context, q *store.Queries, path string) error {
 		}
 	}
 	return nil
-}
-
-func DemoTeacher(ctx context.Context, q *store.Queries) error {
-	_, err := q.GetUserByEmail(ctx, "prof@demo.com")
-	if err == nil {
-		return nil
-	}
-	senhaHash, err := auth.HashPassword("demo1234")
-	if err != nil {
-		return err
-	}
-	_, err = q.CreateUser(ctx, store.CreateUserParams{
-		Email:     "prof@demo.com",
-		SenhaHash: senhaHash,
-		Nome:      "Professor Demo",
-	})
-	return err
 }

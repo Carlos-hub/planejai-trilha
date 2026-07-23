@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	apihttp "github.com/Carlos-hub/planejai/backend/internal/http"
 	"github.com/Carlos-hub/planejai/backend/internal/lesson"
@@ -40,16 +41,25 @@ func main() {
 	if err := seed.BNCC(ctx, deps.Store, "seed/bncc.json"); err != nil {
 		log.Printf("seed: %v", err)
 	}
-	if err := seed.DemoTeacher(ctx, deps.Store); err != nil {
-		log.Printf("seed: %v", err)
-	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 	log.Printf("listening on :%s", port)
-	if err := http.ListenAndServe(":"+port, apihttp.NewRouter(deps)); err != nil {
+	// Timeouts bound how long a single connection can tie up server resources,
+	// mitigating slowloris-style DoS. WriteTimeout is generous because AI
+	// generation responses can take ~20s.
+	srv := &http.Server{
+		Addr:              ":" + port,
+		Handler:           apihttp.NewRouter(deps),
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       20 * time.Second,
+		WriteTimeout:      90 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -63,15 +63,7 @@ func (d Deps) register(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 409, map[string]string{"error": "email já cadastrado"})
 		return
 	}
-	sid, _ := auth.NewSessionID()
-	exp := time.Now().Add(auth.SessionTTL)
-	if _, err := d.Store.CreateSession(r.Context(), store.CreateSessionParams{
-		ID: sid, UserID: u.ID, ExpiresAt: pgTime(exp),
-	}); err != nil {
-		writeJSON(w, 500, map[string]string{"error": "erro"})
-		return
-	}
-	setSessionCookie(w, sid, exp)
+	// No auto-login: signup creates the account and the user then signs in.
 	writeJSON(w, 201, map[string]any{"id": u.ID, "email": u.Email, "nome": u.Nome})
 }
 
