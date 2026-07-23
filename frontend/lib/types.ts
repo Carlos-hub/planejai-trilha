@@ -167,3 +167,22 @@ export const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
   deepseek: "Deepseek",
   llama: "Llama",
 };
+
+// --- turma_handlers.go: turmaAulaResponse (GET /api/turmas/:id - aulas field) ---
+export interface TurmaAula {
+  lesson_plan_id: number;
+  ordem: number;
+  status: string;
+  codigo: string | null;
+  label: string;
+}
+
+// --- student_handlers.go: studentAulaResponse (GET /api/student/lessons - aulas field) ---
+export interface StudentAula {
+  ordem: number;
+  label: string;
+  codigo: string;
+  concluido: boolean;
+  pontos: number;
+  unlocked: boolean;
+}
