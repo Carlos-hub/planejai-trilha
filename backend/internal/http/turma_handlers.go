@@ -64,6 +64,9 @@ func (d Deps) listTurmas(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 500, map[string]string{"error": "erro ao listar turmas"})
 		return
 	}
+	if turmas == nil {
+		turmas = []store.Turma{}
+	}
 	writeJSON(w, 200, turmas)
 }
 

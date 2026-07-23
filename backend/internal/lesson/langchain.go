@@ -27,14 +27,14 @@ var defaultModels = map[string]string{
 	"openai":    "gpt-4o",
 	"googleai":  "gemini-2.0-flash",
 	"deepseek":  "deepseek-chat",
-	"llama":     "llama-3.3-70b-versatile",
+	"llama":     "Llama-3.3-70B-Instruct",
 }
 
 // providerBaseURLs holds custom OpenAI-compatible base URLs for providers that
 // speak the OpenAI API but live elsewhere.
 var providerBaseURLs = map[string]string{
 	"deepseek": "https://api.deepseek.com",
-	"llama":    "https://api.groq.com/openai/v1",
+	"llama":    "https://api.llama.com/compat/v1",
 }
 
 // NewGeneratorForProvider builds a Generator for the given provider using the
