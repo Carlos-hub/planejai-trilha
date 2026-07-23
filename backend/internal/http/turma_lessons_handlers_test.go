@@ -80,3 +80,37 @@ func userIDFromCookie(t *testing.T, d Deps, c *http.Cookie) int64 {
 	}
 	return s.UserID
 }
+
+func TestGetTurmaIncludesAulas(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "task4-include-aulas@t.com")
+	uid := userIDFromCookie(t, d, cookie)
+	turmaID := seedTurma(t, d, uid, "6A-getaulas")
+	lessonID := seedReadyLesson(t, d, uid)
+
+	body, _ := json.Marshal(map[string]any{"lesson_plan_id": lessonID})
+	att := httptest.NewRequest("POST", "/api/turmas/"+itoa(turmaID)+"/lessons", bytes.NewReader(body))
+	att.AddCookie(cookie)
+	r.ServeHTTP(httptest.NewRecorder(), att)
+
+	req := httptest.NewRequest("GET", "/api/turmas/"+itoa(turmaID), nil)
+	req.AddCookie(cookie)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("get turma status=%d body=%s", w.Code, w.Body)
+	}
+	var resp struct {
+		Aulas []struct {
+			LessonPlanID int64  `json:"lesson_plan_id"`
+			Ordem        int    `json:"ordem"`
+			Status       string `json:"status"`
+			Label        string `json:"label"`
+		} `json:"aulas"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	if len(resp.Aulas) != 1 || resp.Aulas[0].LessonPlanID != lessonID {
+		t.Fatalf("aulas=%+v, want 1 with lesson=%d", resp.Aulas, lessonID)
+	}
+}
