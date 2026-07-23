@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
@@ -69,6 +70,43 @@ func TestAttachTurmaLesson(t *testing.T) {
 	r.ServeHTTP(w2, req2)
 	if w2.Code != http.StatusConflict {
 		t.Fatalf("duplicate status=%d, want 409", w2.Code)
+	}
+}
+
+func TestDetachTurmaLessonRenumbers(t *testing.T) {
+	d := testDeps(t)
+	r := NewRouter(d)
+	cookie := loginProfessor(t, d, "detach-lesson-task5-"+itoa(time.Now().UnixNano())+"@t.com")
+	uid := userIDFromCookie(t, d, cookie)
+	turmaID := seedTurma(t, d, uid, "6A-detach")
+	l1 := seedReadyLesson(t, d, uid)
+	l2 := seedReadyLesson(t, d, uid)
+	l3 := seedReadyLesson(t, d, uid)
+	for _, id := range []int64{l1, l2, l3} {
+		b, _ := json.Marshal(map[string]any{"lesson_plan_id": id})
+		req := httptest.NewRequest("POST", "/api/turmas/"+itoa(turmaID)+"/lessons", bytes.NewReader(b))
+		req.AddCookie(cookie)
+		r.ServeHTTP(httptest.NewRecorder(), req)
+	}
+
+	// remove a do meio (l2)
+	del := httptest.NewRequest("DELETE", "/api/turmas/"+itoa(turmaID)+"/lessons/"+itoa(l2), nil)
+	del.AddCookie(cookie)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, del)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("detach status=%d", w.Code)
+	}
+
+	rows, err := d.Store.ListTurmaLessons(context.Background(), turmaID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 2 || rows[0].Ordem != 1 || rows[1].Ordem != 2 {
+		t.Fatalf("after detach rows=%+v, want ordens 1,2 contíguas", rows)
+	}
+	if rows[0].LessonPlanID != l1 || rows[1].LessonPlanID != l3 {
+		t.Fatalf("wrong remaining lessons: %+v", rows)
 	}
 }
 

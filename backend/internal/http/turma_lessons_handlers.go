@@ -112,3 +112,44 @@ func (d Deps) attachTurmaLesson(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"lesson_plan_id": row.LessonPlanID, "ordem": row.Ordem})
 }
+
+// detachTurmaLesson handles DELETE /api/turmas/:id/lessons/:lessonId: removes
+// the lesson from the turma and renumbers the remaining aulas so ordem stays
+// contiguous, all inside a single transaction.
+func (d Deps) detachTurmaLesson(w http.ResponseWriter, r *http.Request) {
+	userID, ok := userIDFromContext(r)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "não autenticado"})
+		return
+	}
+	turma, ok := d.ownedTurma(w, r, userID)
+	if !ok {
+		return
+	}
+	lessonID, err := strconv.ParseInt(chi.URLParam(r, "lessonId"), 10, 64)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "aula não encontrada"})
+		return
+	}
+	ctx := r.Context()
+	tx, err := d.Pool.Begin(ctx)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro"})
+		return
+	}
+	defer tx.Rollback(ctx)
+	q := d.Store.WithTx(tx)
+	if err := q.DetachTurmaLesson(ctx, store.DetachTurmaLessonParams{TurmaID: turma.ID, LessonPlanID: lessonID}); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao remover aula"})
+		return
+	}
+	if err := q.RenumberTurmaLessons(ctx, turma.ID); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao reordenar"})
+		return
+	}
+	if err := tx.Commit(ctx); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao salvar"})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
