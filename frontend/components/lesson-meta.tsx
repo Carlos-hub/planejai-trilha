@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BookMarked, Clock } from "lucide-react";
+import { BookMarked, Clock, ChevronDown, Check } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { BnccSkill } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,9 @@ export function LessonMeta({
   const [ano, setAno] = useState("");
   const [assunto, setAssunto] = useState("");
   const [query, setQuery] = useState("");
+  // Habilidade list collapses once one is picked; a pre-selected skill (edit
+  // mode) starts collapsed and marked.
+  const [skillOpen, setSkillOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +122,8 @@ export function LessonMeta({
   const shown = filtered.slice(0, LIMIT);
   const overflow = filtered.length - shown.length;
 
+  const selected = (skills ?? []).find((s) => s.id === bnccSkillId) ?? null;
+
   const etapas = [
     { value: "", label: "Todas" },
     { value: "EF", label: "Fundamental" },
@@ -207,74 +212,114 @@ export function LessonMeta({
       </Field>
 
       <Field label="Habilidade BNCC" icon={<BookMarked className="size-3.5" />}>
-        {skills === null ? (
-          <p className="text-sm text-muted-foreground">Carregando…</p>
-        ) : filtered.length === 0 ? (
-          <p className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-            Nenhuma habilidade encontrada. Ajuste os filtros acima.
-          </p>
-        ) : (
-          <>
-            <p className="mb-1.5 text-xs text-muted-foreground">
-              {filtered.length}{" "}
-              {filtered.length === 1 ? "habilidade" : "habilidades"} · toque para
-              selecionar
-            </p>
-            <div
-              role="listbox"
-              aria-label="Habilidades BNCC"
-              className="flex max-h-80 flex-col gap-1.5 overflow-y-auto rounded-lg border bg-card p-1.5"
-            >
-              {shown.map((s) => {
-                const active = s.id === bnccSkillId;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    role="option"
-                    aria-selected={active}
-                    onClick={() => onBnccSkillIdChange(active ? null : s.id)}
-                    className={cn(
-                      "flex flex-col gap-1 rounded-md border px-3 py-2 text-left transition-colors",
-                      active
-                        ? "border-primary bg-brand-muted/60"
-                        : "border-transparent hover:bg-muted"
-                    )}
-                  >
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span
+        {/* Collapsed trigger — shows the current selection, opens the list. */}
+        <button
+          type="button"
+          onClick={() => setSkillOpen((o) => !o)}
+          disabled={skills === null}
+          aria-expanded={skillOpen}
+          className={cn(
+            "flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border bg-card px-3 py-1.5 text-left transition-colors disabled:opacity-50",
+            selected ? "border-primary" : "border-input",
+            "outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
+          )}
+        >
+          {selected ? (
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 rounded bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground">
+                {selected.code}
+              </span>
+              <span className="truncate text-sm">{selected.descricao}</span>
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {skills === null ? "Carregando…" : "Selecione a habilidade"}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform",
+              skillOpen && "rotate-180"
+            )}
+          />
+        </button>
+
+        {skillOpen && (
+          <div className="mt-1.5">
+            {filtered.length === 0 ? (
+              <p className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                Nenhuma habilidade encontrada. Ajuste os filtros acima.
+              </p>
+            ) : (
+              <>
+                <p className="mb-1.5 text-xs text-muted-foreground">
+                  {filtered.length}{" "}
+                  {filtered.length === 1 ? "habilidade" : "habilidades"} · toque
+                  para selecionar
+                </p>
+                <div
+                  role="listbox"
+                  aria-label="Habilidades BNCC"
+                  className="flex max-h-80 flex-col gap-1.5 overflow-y-auto rounded-lg border bg-card p-1.5"
+                >
+                  {shown.map((s) => {
+                    const active = s.id === bnccSkillId;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => {
+                          onBnccSkillIdChange(s.id);
+                          setSkillOpen(false);
+                        }}
                         className={cn(
-                          "rounded px-1.5 py-0.5 text-xs font-semibold",
+                          "flex flex-col gap-1 rounded-md border px-3 py-2 text-left transition-colors",
                           active
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-primary/10 text-primary"
+                            ? "border-primary bg-brand-muted/60"
+                            : "border-transparent hover:bg-muted"
                         )}
                       >
-                        {s.code}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {s.disciplina} · {s.ano_label}
-                      </span>
-                      {s.assunto && (
-                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                          {s.assunto}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm leading-snug text-foreground/90">
-                      {s.descricao}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-            {overflow > 0 && (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Mostrando {LIMIT} de {filtered.length}. Refine os filtros para
-                ver o restante.
-              </p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span
+                            className={cn(
+                              "rounded px-1.5 py-0.5 text-xs font-semibold",
+                              active
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-primary/10 text-primary"
+                            )}
+                          >
+                            {s.code}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {s.disciplina} · {s.ano_label}
+                          </span>
+                          {s.assunto && (
+                            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                              {s.assunto}
+                            </span>
+                          )}
+                          {active && (
+                            <Check className="ml-auto size-4 shrink-0 text-primary" />
+                          )}
+                        </div>
+                        <p className="text-sm leading-snug text-foreground/90">
+                          {s.descricao}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+                {overflow > 0 && (
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Mostrando {LIMIT} de {filtered.length}. Refine os filtros
+                    para ver o restante.
+                  </p>
+                )}
+              </>
             )}
-          </>
+          </div>
         )}
       </Field>
 
