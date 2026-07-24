@@ -119,8 +119,6 @@ export function LessonMeta({
   const shown = filtered.slice(0, LIMIT);
   const overflow = filtered.length - shown.length;
 
-  const selected = (skills ?? []).find((s) => s.id === bnccSkillId) ?? null;
-
   const etapas = [
     { value: "", label: "Todas" },
     { value: "EF", label: "Fundamental" },
@@ -208,53 +206,77 @@ export function LessonMeta({
         />
       </Field>
 
-      <Field
-        label="Habilidade BNCC"
-        icon={<BookMarked className="size-3.5" />}
-        htmlFor="bncc-skill"
-      >
-        <select
-          id="bncc-skill"
-          className={selectClass}
-          value={bnccSkillId ?? ""}
-          onChange={(e) =>
-            onBnccSkillIdChange(
-              e.target.value === "" ? null : Number(e.target.value)
-            )
-          }
-        >
-          <option value="">
-            {skills === null
-              ? "Carregando…"
-              : `Selecione uma habilidade (${filtered.length})`}
-          </option>
-          {shown.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.code} · {s.ano_label} · {s.descricao}
-            </option>
-          ))}
-        </select>
-        {overflow > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Mostrando {LIMIT} de {filtered.length}. Refine a busca para ver o
-            restante.
+      <Field label="Habilidade BNCC" icon={<BookMarked className="size-3.5" />}>
+        {skills === null ? (
+          <p className="text-sm text-muted-foreground">Carregando…</p>
+        ) : filtered.length === 0 ? (
+          <p className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+            Nenhuma habilidade encontrada. Ajuste os filtros acima.
           </p>
+        ) : (
+          <>
+            <p className="mb-1.5 text-xs text-muted-foreground">
+              {filtered.length}{" "}
+              {filtered.length === 1 ? "habilidade" : "habilidades"} · toque para
+              selecionar
+            </p>
+            <div
+              role="listbox"
+              aria-label="Habilidades BNCC"
+              className="flex max-h-80 flex-col gap-1.5 overflow-y-auto rounded-lg border bg-card p-1.5"
+            >
+              {shown.map((s) => {
+                const active = s.id === bnccSkillId;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => onBnccSkillIdChange(active ? null : s.id)}
+                    className={cn(
+                      "flex flex-col gap-1 rounded-md border px-3 py-2 text-left transition-colors",
+                      active
+                        ? "border-primary bg-brand-muted/60"
+                        : "border-transparent hover:bg-muted"
+                    )}
+                  >
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.5 text-xs font-semibold",
+                          active
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-primary/10 text-primary"
+                        )}
+                      >
+                        {s.code}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {s.disciplina} · {s.ano_label}
+                      </span>
+                      {s.assunto && (
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {s.assunto}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm leading-snug text-foreground/90">
+                      {s.descricao}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+            {overflow > 0 && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Mostrando {LIMIT} de {filtered.length}. Refine os filtros para
+                ver o restante.
+              </p>
+            )}
+          </>
         )}
       </Field>
-
-      {selected && (
-        <div className="rounded-lg border border-primary/20 bg-brand-muted/50 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
-              {selected.code}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {selected.disciplina} · {selected.ano_label} · {selected.assunto}
-            </span>
-          </div>
-          <p className="mt-2 text-sm text-foreground/80">{selected.descricao}</p>
-        </div>
-      )}
 
       <Field label="Duração da aula" icon={<Clock className="size-3.5" />}>
         <div className="flex flex-wrap items-center gap-2">
