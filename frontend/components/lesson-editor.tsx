@@ -400,7 +400,7 @@ export function LessonEditor({
 
       {/* Sticky save bar */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/90 backdrop-blur lg:pl-64">
-        <div className="mx-auto flex max-w-4xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-end gap-2 px-4 py-3 sm:px-6">
           {extraActions}
           <Button size="lg" onClick={onSave} disabled={saving}>
             {saving ? "Salvando…" : saveLabel}
