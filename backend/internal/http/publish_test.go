@@ -14,7 +14,7 @@ import (
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
 
-var trailCodeRe = regexp.MustCompile(`^TR-[A-Z2-9]{4}$`)
+var trailCodeRe = regexp.MustCompile(`^TR-[A-Z2-9]{6}$`)
 
 func TestPublishTrail(t *testing.T) {
 	d := testDeps(t)
@@ -119,7 +119,7 @@ func TestPublishTrail(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !trailCodeRe.MatchString(publishResp.Codigo) {
-		t.Fatalf("codigo %q does not match TR-XXXX pattern", publishResp.Codigo)
+		t.Fatalf("codigo %q does not match TR-XXXXXX pattern", publishResp.Codigo)
 	}
 	if !strings.HasSuffix(publishResp.PublicaURL, "/t/"+publishResp.Codigo) {
 		t.Fatalf("publica_url %q does not end with /t/%s", publishResp.PublicaURL, publishResp.Codigo)
