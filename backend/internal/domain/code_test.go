@@ -12,10 +12,10 @@ func TestNewTrailCode(t *testing.T) {
 		}
 	})
 
-	t.Run("has total length of 7", func(t *testing.T) {
+	t.Run("has total length of 9", func(t *testing.T) {
 		code := NewTrailCode()
-		if len(code) != 7 {
-			t.Errorf("expected length 7, got %d for code '%s'", len(code), code)
+		if len(code) != 9 {
+			t.Errorf("expected length 9, got %d for code '%s'", len(code), code)
 		}
 	})
 
