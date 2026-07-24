@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/time/rate"
 
 	"github.com/Carlos-hub/planejai/backend/internal/lesson"
 	"github.com/Carlos-hub/planejai/backend/internal/secret"
@@ -27,21 +28,38 @@ type Deps struct {
 
 func NewRouter(d Deps) http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.RealIP) // resolve client IP from X-Forwarded-For/X-Real-IP for rate limiting
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(maxBodyBytes(1 << 20)) // 1 MiB request cap — large-payload DoS guard
+	r.Use(middleware.Throttle(128))
 	r.Use(corsMiddleware)
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
+
+	// Per-IP rate limits (DoS mitigation): a permissive global cap on all /api
+	// traffic, plus a strict cap on credential endpoints to blunt brute-force
+	// and signup spam. True volumetric DDoS must still be absorbed upstream
+	// (CDN / load balancer); this is the application-layer floor.
+	globalLimiter := newIPRateLimiter(rate.Limit(20), 40)
+	authLimiter := newIPRateLimiter(rate.Every(3*time.Second), 5)
 	r.Route("/api", func(r chi.Router) {
-		r.Post("/auth/login", d.login)
-		r.Post("/auth/register", d.register)
+		r.Use(globalLimiter.middleware)
+
+		// Credential endpoints get an extra strict per-IP limit.
+		r.Group(func(r chi.Router) {
+			r.Use(authLimiter.middleware)
+			r.Post("/auth/login", d.login)
+			r.Post("/auth/register", d.register)
+			r.Post("/student/login", d.studentLogin)
+		})
+
 		r.Post("/auth/logout", d.logout)
 		r.Get("/t/{code}", d.publicTrail)
 		r.Get("/t/{code}/export.pdf", d.exportTrailPDF)
 		r.Post("/t/{code}/attempt", d.startAttempt)
 		r.Post("/attempts/{id}/answers", d.submitAnswers)
-		r.Post("/student/login", d.studentLogin)
 		r.Post("/student/logout", d.studentLogout)
 		r.Group(func(r chi.Router) {
 			r.Use(d.RequireStudent)

@@ -41,21 +41,21 @@ export default function TeacherLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const isLoginPage = pathname === "/login";
+  // Public auth pages render standalone, without the shell or auth guard.
+  const isPublicPage = pathname === "/login" || pathname === "/cadastro";
 
   useEffect(() => {
-    if (!loading && error && !isLoginPage) {
+    if (!loading && error && !isPublicPage) {
       router.push("/login");
     }
-  }, [loading, error, isLoginPage, router]);
+  }, [loading, error, isPublicPage, router]);
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
 
-  // The login page renders standalone, without the shell or auth guard.
-  if (isLoginPage) {
+  if (isPublicPage) {
     return <>{children}</>;
   }
 
