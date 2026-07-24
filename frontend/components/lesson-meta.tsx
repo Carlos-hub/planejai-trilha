@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BookMarked, Clock } from "lucide-react";
+import { BookMarked, Clock, ChevronDown, Check } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { BnccSkill } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -28,7 +28,11 @@ export function LessonMeta({
   const [etapa, setEtapa] = useState("");
   const [disciplina, setDisciplina] = useState("");
   const [ano, setAno] = useState("");
+  const [assunto, setAssunto] = useState("");
   const [query, setQuery] = useState("");
+  // Habilidade list collapses once one is picked; a pre-selected skill (edit
+  // mode) starts collapsed and marked.
+  const [skillOpen, setSkillOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,11 +57,6 @@ export function LessonMeta({
     [skills, etapa]
   );
 
-  // Drop the disciplina filter if it no longer belongs to the current etapa.
-  useEffect(() => {
-    if (disciplina && !disciplinas.includes(disciplina)) setDisciplina("");
-  }, [disciplina, disciplinas]);
-
   // Anos available for the current etapa (a skill can span multiple anos).
   const anos = useMemo(
     () =>
@@ -71,25 +70,52 @@ export function LessonMeta({
     [skills, etapa]
   );
 
-  // Drop the ano filter if it no longer exists for the current etapa.
-  useEffect(() => {
-    if (ano && !anos.includes(Number(ano))) setAno("");
-  }, [ano, anos]);
+  // A stored filter can go stale when a broader one changes (switching etapa
+  // drops its disciplinas/anos). Derive the effective value during render rather
+  // than resetting state in an effect — same result, no cascading re-render.
+  const effDisciplina =
+    disciplina && disciplinas.includes(disciplina) ? disciplina : "";
+  const effAno = ano && anos.includes(Number(ano)) ? ano : "";
+
+  // Matérias (assuntos) for the current etapa/disciplina/ano. The catalog
+  // repeats each assunto across many codes and years; collapse to a distinct,
+  // deduped list so the teacher picks the matéria once — the ano select scopes
+  // which year's habilidades appear below.
+  const assuntos = useMemo(
+    () =>
+      [
+        ...new Set(
+          (skills ?? [])
+            .filter(
+              (s) =>
+                (!etapa || s.etapa === etapa) &&
+                (!effDisciplina || s.disciplina === effDisciplina) &&
+                (!effAno || s.anos.includes(Number(effAno)))
+            )
+            .map((s) => s.assunto)
+            .filter((a) => a.trim().length > 0)
+        ),
+      ].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [skills, etapa, effDisciplina, effAno]
+  );
+
+  const effAssunto = assunto && assuntos.includes(assunto) ? assunto : "";
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (skills ?? []).filter(
       (s) =>
         (!etapa || s.etapa === etapa) &&
-        (!disciplina || s.disciplina === disciplina) &&
-        (!ano || s.anos.includes(Number(ano))) &&
+        (!effDisciplina || s.disciplina === effDisciplina) &&
+        (!effAno || s.anos.includes(Number(effAno))) &&
+        (!effAssunto || s.assunto === effAssunto) &&
         (!q ||
           s.code.toLowerCase().includes(q) ||
           s.disciplina.toLowerCase().includes(q) ||
           s.assunto.toLowerCase().includes(q) ||
           s.descricao.toLowerCase().includes(q))
     );
-  }, [skills, etapa, disciplina, ano, query]);
+  }, [skills, etapa, effDisciplina, effAno, effAssunto, query]);
 
   // Full catalog is large; cap the rendered options and nudge to refine.
   const LIMIT = 300;
@@ -130,7 +156,7 @@ export function LessonMeta({
         <Field label="Ano">
           <select
             className={selectClass}
-            value={ano}
+            value={effAno}
             onChange={(e) => setAno(e.target.value)}
           >
             <option value="">Todos os anos</option>
@@ -144,7 +170,7 @@ export function LessonMeta({
         <Field label="Disciplina">
           <select
             className={selectClass}
-            value={disciplina}
+            value={effDisciplina}
             onChange={(e) => setDisciplina(e.target.value)}
           >
             <option value="">Todas as disciplinas</option>
@@ -156,7 +182,27 @@ export function LessonMeta({
           </select>
         </Field>
       </div>
-      <Field label="Buscar matéria / tópico">
+      <Field label="Matéria / assunto" htmlFor="bncc-assunto">
+        <select
+          id="bncc-assunto"
+          className={selectClass}
+          value={effAssunto}
+          onChange={(e) => setAssunto(e.target.value)}
+          disabled={skills === null || assuntos.length === 0}
+        >
+          <option value="">
+            {skills === null
+              ? "Carregando…"
+              : `Todas as matérias (${assuntos.length})`}
+          </option>
+          {assuntos.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Buscar habilidade / tópico">
         <Input
           type="search"
           value={query}
@@ -165,53 +211,117 @@ export function LessonMeta({
         />
       </Field>
 
-      <Field
-        label="Habilidade BNCC"
-        icon={<BookMarked className="size-3.5" />}
-        htmlFor="bncc-skill"
-      >
-        <select
-          id="bncc-skill"
-          className={selectClass}
-          value={bnccSkillId ?? ""}
-          onChange={(e) =>
-            onBnccSkillIdChange(
-              e.target.value === "" ? null : Number(e.target.value)
-            )
-          }
+      <Field label="Habilidade BNCC" icon={<BookMarked className="size-3.5" />}>
+        {/* Collapsed trigger — shows the current selection, opens the list. */}
+        <button
+          type="button"
+          onClick={() => setSkillOpen((o) => !o)}
+          disabled={skills === null}
+          aria-expanded={skillOpen}
+          className={cn(
+            "flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border bg-card px-3 py-1.5 text-left transition-colors disabled:opacity-50",
+            selected ? "border-primary" : "border-input",
+            "outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40"
+          )}
         >
-          <option value="">
-            {skills === null
-              ? "Carregando…"
-              : `Selecione uma habilidade (${filtered.length})`}
-          </option>
-          {shown.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.code} · {s.assunto} · {s.ano_label}
-            </option>
-          ))}
-        </select>
-        {overflow > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Mostrando {LIMIT} de {filtered.length}. Refine a busca para ver o
-            restante.
-          </p>
+          {selected ? (
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 rounded bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground">
+                {selected.code}
+              </span>
+              <span className="truncate text-sm">{selected.descricao}</span>
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              {skills === null ? "Carregando…" : "Selecione a habilidade"}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 text-muted-foreground transition-transform",
+              skillOpen && "rotate-180"
+            )}
+          />
+        </button>
+
+        {skillOpen && (
+          <div className="mt-1.5">
+            {filtered.length === 0 ? (
+              <p className="rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                Nenhuma habilidade encontrada. Ajuste os filtros acima.
+              </p>
+            ) : (
+              <>
+                <p className="mb-1.5 text-xs text-muted-foreground">
+                  {filtered.length}{" "}
+                  {filtered.length === 1 ? "habilidade" : "habilidades"} · toque
+                  para selecionar
+                </p>
+                <div
+                  role="listbox"
+                  aria-label="Habilidades BNCC"
+                  className="flex max-h-80 flex-col gap-1.5 overflow-y-auto rounded-lg border bg-card p-1.5"
+                >
+                  {shown.map((s) => {
+                    const active = s.id === bnccSkillId;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => {
+                          onBnccSkillIdChange(s.id);
+                          setSkillOpen(false);
+                        }}
+                        className={cn(
+                          "flex flex-col gap-1 rounded-md border px-3 py-2 text-left transition-colors",
+                          active
+                            ? "border-primary bg-brand-muted/60"
+                            : "border-transparent hover:bg-muted"
+                        )}
+                      >
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span
+                            className={cn(
+                              "rounded px-1.5 py-0.5 text-xs font-semibold",
+                              active
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-primary/10 text-primary"
+                            )}
+                          >
+                            {s.code}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {s.disciplina} · {s.ano_label}
+                          </span>
+                          {s.assunto && (
+                            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                              {s.assunto}
+                            </span>
+                          )}
+                          {active && (
+                            <Check className="ml-auto size-4 shrink-0 text-primary" />
+                          )}
+                        </div>
+                        <p className="text-sm leading-snug text-foreground/90">
+                          {s.descricao}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+                {overflow > 0 && (
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Mostrando {LIMIT} de {filtered.length}. Refine os filtros
+                    para ver o restante.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         )}
       </Field>
-
-      {selected && (
-        <div className="rounded-lg border border-primary/20 bg-brand-muted/50 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
-              {selected.code}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {selected.disciplina} · {selected.ano_label} · {selected.assunto}
-            </span>
-          </div>
-          <p className="mt-2 text-sm text-foreground/80">{selected.descricao}</p>
-        </div>
-      )}
 
       <Field label="Duração da aula" icon={<Clock className="size-3.5" />}>
         <div className="flex flex-wrap items-center gap-2">
