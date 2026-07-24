@@ -21,8 +21,11 @@ export default function LoginPage() {
 
   // Show a success banner when arriving from signup (?cadastro=1). Read from
   // the URL client-side to avoid a Suspense boundary around useSearchParams.
+  // One-shot read on mount (starts false to keep SSR/hydration in sync), so the
+  // set-state-in-effect rule doesn't apply here.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("cadastro") === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setJustRegistered(true);
     }
   }, []);
