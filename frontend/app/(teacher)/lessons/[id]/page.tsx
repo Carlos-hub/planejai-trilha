@@ -156,7 +156,7 @@ export default function LessonDetailPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6 pb-28 sm:px-6 sm:py-8">
+    <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6 pb-40 sm:px-6 sm:py-8 sm:pb-28">
       <div className="flex flex-col gap-2">
         <Link
           href="/"
