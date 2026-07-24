@@ -46,6 +46,7 @@ func NewRouter(d Deps) http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(d.RequireStudent)
 			r.Post("/student/password", d.studentChangePassword)
+			r.Get("/student/lessons", d.studentLessons)
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(d.RequireAuth)
@@ -58,6 +59,9 @@ func NewRouter(d Deps) http.Handler {
 			r.Delete("/turmas/{id}", d.deleteTurma)
 			r.Post("/turmas/{id}/students", d.addStudent)
 			r.Post("/turmas/{id}/students/import", d.importStudents)
+			r.Post("/turmas/{id}/lessons", d.attachTurmaLesson)
+			r.Delete("/turmas/{id}/lessons/{lessonId}", d.detachTurmaLesson)
+			r.Patch("/turmas/{id}/lessons", d.reorderTurmaLessons)
 			r.Post("/lessons", d.createLesson)
 			r.Get("/lessons", d.listLessons)
 			r.Get("/lessons/{id}", d.getLesson)

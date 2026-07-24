@@ -5,8 +5,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Printer, Upload, UserPlus } from "lucide-react";
 import { addStudent, getTurma, importStudentsCSV } from "@/lib/api";
-import type { ImportedStudent } from "@/lib/types";
+import type { ImportedStudent, TurmaAula } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { TurmaAulas } from "@/components/turma-aulas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +28,7 @@ export default function TurmaDetailPage() {
 
   const [nome, setNome] = useState("");
   const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [aulas, setAulas] = useState<TurmaAula[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [criados, setCriados] = useState<ImportedStudent[]>([]);
   const [importing, setImporting] = useState(false);
@@ -43,6 +45,7 @@ export default function TurmaDetailPage() {
       .then((data) => {
         setNome(data.turma.nome);
         setAlunos(data.alunos);
+        setAulas(data.aulas ?? []);
         setLoadError(null);
       })
       .catch(() => {
@@ -281,6 +284,8 @@ export default function TurmaDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <TurmaAulas turmaId={turmaId} aulas={aulas} onChanged={reload} />
     </div>
   );
 }

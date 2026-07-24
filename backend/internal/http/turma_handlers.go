@@ -64,6 +64,9 @@ func (d Deps) listTurmas(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 500, map[string]string{"error": "erro ao listar turmas"})
 		return
 	}
+	if turmas == nil {
+		turmas = []store.Turma{}
+	}
 	writeJSON(w, 200, turmas)
 }
 
@@ -90,7 +93,15 @@ func (d Deps) getTurma(w http.ResponseWriter, r *http.Request) {
 	for _, s := range students {
 		pub = append(pub, studentPublic{ID: s.ID, Nome: s.Nome, Usuario: s.Usuario, Matricula: s.Matricula})
 	}
-	writeJSON(w, 200, map[string]any{"turma": turma, "alunos": pub})
+	aulas, err := d.Store.ListTurmaLessons(r.Context(), turma.ID)
+	if err != nil {
+		writeJSON(w, 500, map[string]string{"error": "erro ao carregar aulas"})
+		return
+	}
+	if aulas == nil {
+		aulas = []store.ListTurmaLessonsRow{}
+	}
+	writeJSON(w, 200, map[string]any{"turma": turma, "alunos": pub, "aulas": aulas})
 }
 
 func (d Deps) patchTurma(w http.ResponseWriter, r *http.Request) {

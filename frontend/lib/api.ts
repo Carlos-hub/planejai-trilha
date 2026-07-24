@@ -1,4 +1,13 @@
-import type { AIProvider, AITokenStatus, Student, Turma, ImportedStudent } from "./types";
+import type {
+  AIProvider,
+  AITokenStatus,
+  Student,
+  Turma,
+  ImportedStudent,
+  TurmaAula,
+  StudentAula,
+  LessonSummary,
+} from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -29,6 +38,7 @@ export const getTurma = (id: number) =>
   apiFetch<{
     turma: Turma;
     alunos: { id: number; nome: string; usuario: string; matricula: string | null }[];
+    aulas: TurmaAula[];
   }>(`/api/turmas/${id}`);
 
 export const createTurma = (input: { nome: string; etapa?: string; anos?: number[] }) =>
@@ -65,3 +75,25 @@ export const saveAIToken = (provider: AIProvider, token: string) =>
 
 export const deleteAIToken = () =>
   apiFetch<void>("/api/me/ai-token", { method: "DELETE" });
+
+export const listLessons = () => apiFetch<LessonSummary[]>("/api/lessons");
+
+export const attachTurmaLesson = (turmaId: number, lessonPlanId: number) =>
+  apiFetch<{ lesson_plan_id: number; ordem: number }>(
+    `/api/turmas/${turmaId}/lessons`,
+    { method: "POST", body: JSON.stringify({ lesson_plan_id: lessonPlanId }) }
+  );
+
+export const detachTurmaLesson = (turmaId: number, lessonPlanId: number) =>
+  apiFetch<void>(`/api/turmas/${turmaId}/lessons/${lessonPlanId}`, {
+    method: "DELETE",
+  });
+
+export const reorderTurmaLessons = (turmaId: number, orderedIds: number[]) =>
+  apiFetch<void>(`/api/turmas/${turmaId}/lessons`, {
+    method: "PATCH",
+    body: JSON.stringify({ ordered_ids: orderedIds }),
+  });
+
+export const getStudentLessons = () =>
+  apiFetch<{ aulas: StudentAula[] }>("/api/student/lessons");

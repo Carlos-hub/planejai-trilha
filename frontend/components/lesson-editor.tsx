@@ -7,6 +7,12 @@ import {
   Plus,
   Trash2,
   Check,
+  NotebookPen,
+  Presentation,
+  Backpack,
+  ClipboardCheck,
+  Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 import type { Plano, Questao, Topico, Trilha } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -35,12 +41,38 @@ const emptyQuestao = (): Questao => ({ enunciado: "", opcoes: ["", ""], correta:
 const PLANO_FIELDS: {
   key: keyof Plano;
   label: string;
+  helper: string;
   placeholder: string;
+  icon: LucideIcon;
 }[] = [
-  { key: "objetivos", label: "Objetivos", placeholder: "O que o aluno deve aprender…" },
-  { key: "metodologia", label: "Metodologia", placeholder: "Como a aula será conduzida…" },
-  { key: "recursos", label: "Recursos", placeholder: "Materiais, ferramentas, referências…" },
-  { key: "avaliacao", label: "Avaliação", placeholder: "Como o aprendizado será avaliado…" },
+  {
+    key: "objetivos",
+    label: "Objetivos",
+    icon: Target,
+    helper: "O que o aluno deve ser capaz de fazer ao final da aula.",
+    placeholder: "Ao final, o aluno será capaz de…",
+  },
+  {
+    key: "metodologia",
+    label: "Metodologia",
+    icon: Presentation,
+    helper: "Como você conduz a aula, do começo ao fim.",
+    placeholder: "Comece com…, depois…, para fechar…",
+  },
+  {
+    key: "recursos",
+    label: "Recursos",
+    icon: Backpack,
+    helper: "Materiais e ferramentas que você vai usar.",
+    placeholder: "Quadro, cartaz, folhas, música…",
+  },
+  {
+    key: "avaliacao",
+    label: "Avaliação",
+    icon: ClipboardCheck,
+    helper: "Como você verifica se o aluno aprendeu.",
+    placeholder: "Observação da participação, produção do aluno…",
+  },
 ];
 
 const LETTERS = "ABCDEFGH";
@@ -153,30 +185,74 @@ export function LessonEditor({
       </Section>
 
       <Section
-        icon={<ListChecks className="size-4" />}
+        icon={<NotebookPen className="size-4" />}
         title="Plano de aula"
-        description="O planejamento do professor — não aparece para o aluno."
+        description="Preencha na ordem — cada passo guia o próximo. Não aparece para o aluno."
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {PLANO_FIELDS.map(({ key, label, placeholder }) => (
-            <div key={key} className="flex flex-col gap-1.5">
-              <Label htmlFor={key}>{label}</Label>
-              <Textarea
-                id={key}
-                rows={3}
-                placeholder={placeholder}
-                value={value.plano[key]}
-                onChange={(e) => updatePlano(key, e.target.value)}
-              />
-            </div>
-          ))}
+        <div className="flex flex-col">
+          {PLANO_FIELDS.map(({ key, label, helper, placeholder, icon: Icon }, i) => {
+            const filled = value.plano[key].trim().length > 0;
+            const last = i === PLANO_FIELDS.length - 1;
+            return (
+              <div key={key} className="flex gap-3 sm:gap-4">
+                {/* Progress rail — fills as each step is completed. */}
+                <div className="flex flex-col items-center">
+                  <div
+                    className={cn(
+                      "flex size-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
+                      filled
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-primary/20 bg-primary/10 text-primary"
+                    )}
+                  >
+                    {filled ? <Check className="size-4" /> : i + 1}
+                  </div>
+                  {!last && (
+                    <div
+                      className={cn(
+                        "w-px flex-1 transition-colors",
+                        filled ? "bg-primary/40" : "bg-border"
+                      )}
+                    />
+                  )}
+                </div>
+                {/* Field */}
+                <div className={cn("flex-1", last ? "pb-1" : "pb-5")}>
+                  <div className="flex items-center gap-1.5">
+                    <Icon className="size-4 text-primary" />
+                    <Label htmlFor={key} className="text-sm font-semibold">
+                      {label}
+                    </Label>
+                  </div>
+                  <p className="mb-2 mt-0.5 text-xs text-muted-foreground">{helper}</p>
+                  <Textarea
+                    id={key}
+                    rows={3}
+                    placeholder={placeholder}
+                    value={value.plano[key]}
+                    onChange={(e) => updatePlano(key, e.target.value)}
+                  />
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div className="mt-4 flex flex-col gap-1.5">
-          <Label htmlFor="atividade">Atividade</Label>
+
+        {/* Atividade — the hands-on task that closes the plan. */}
+        <div className="mt-2 rounded-xl border border-dashed bg-brand-muted/40 p-4">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="size-4 text-primary" />
+            <Label htmlFor="atividade" className="text-sm font-semibold">
+              Atividade prática
+            </Label>
+          </div>
+          <p className="mb-2 mt-0.5 text-xs text-muted-foreground">
+            Uma tarefa concreta para o aluno aplicar o que aprendeu.
+          </p>
           <Textarea
             id="atividade"
             rows={3}
-            placeholder="Uma atividade prática para fixar o conteúdo…"
+            placeholder="Descreva a atividade que o aluno vai fazer…"
             value={value.atividade}
             onChange={(e) => onChange({ ...value, atividade: e.target.value })}
           />

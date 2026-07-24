@@ -10,11 +10,11 @@ import { BrandLockup } from "@/components/brand-mark";
 
 // safeNext only accepts a same-origin relative path (starts with a single
 // "/", never "//" or "/\" which browsers can treat as protocol-relative and
-// redirect off-site) — anything else defaults to "/".
+// redirect off-site) — anything else defaults to "/aluno".
 function safeNext(raw: string | null): string {
-  if (!raw) return "/";
-  if (!raw.startsWith("/")) return "/";
-  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/";
+  if (!raw) return "/aluno";
+  if (!raw.startsWith("/")) return "/aluno";
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/aluno";
   return raw;
 }
 

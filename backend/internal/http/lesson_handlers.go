@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/Carlos-hub/planejai/backend/internal/domain"
 	"github.com/Carlos-hub/planejai/backend/internal/lesson"
 	"github.com/Carlos-hub/planejai/backend/internal/store"
 )
@@ -415,25 +414,9 @@ func (d Deps) publishTrail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var codigo string
-	for attempt := 0; attempt < maxPublishAttempts; attempt++ {
-		candidate := domain.NewTrailCode()
-		published, err := d.Store.PublishTrail(ctx, store.PublishTrailParams{ID: trail.ID, Codigo: &candidate})
-		if err == nil {
-			codigo = *published.Codigo
-			break
-		}
-
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			continue
-		}
+	codigo, err := d.ensureTrailCodigo(ctx, trail)
+	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "erro ao publicar trilha"})
-		return
-	}
-
-	if codigo == "" {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "não foi possível gerar um código único"})
 		return
 	}
 
@@ -575,6 +558,7 @@ func (d Deps) generateLesson(w http.ResponseWriter, r *http.Request) {
 
 	data, err := gen.Generate(ctx, skill, req.Duracao)
 	if err != nil {
+		log.Printf("generateLesson: gen.Generate failed: %v", err)
 		_ = d.Store.SetLessonStatus(ctx, store.SetLessonStatusParams{ID: lp.ID, Status: "falha"})
 		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "falha na geração"})
 		return
