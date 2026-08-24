@@ -10,10 +10,7 @@ import (
 )
 
 func setSessionCookie(w http.ResponseWriter, sid string, exp time.Time) {
-	http.SetCookie(w, &http.Cookie{
-		Name: "sid", Value: sid, Path: "/", HttpOnly: true,
-		SameSite: http.SameSiteLaxMode, Expires: exp,
-	})
+	http.SetCookie(w, sessionCookie("sid", sid, exp))
 }
 
 func (d Deps) login(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +68,7 @@ func (d Deps) logout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie("sid"); err == nil {
 		_ = d.Store.DeleteSession(r.Context(), c.Value)
 	}
-	http.SetCookie(w, &http.Cookie{Name: "sid", Value: "", Path: "/", MaxAge: -1})
+	http.SetCookie(w, clearCookie("sid"))
 	w.WriteHeader(204)
 }
 

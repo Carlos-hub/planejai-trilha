@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+// The /api proxy lives in app/api/[...path]/route.ts so that API_ORIGIN is read
+// at runtime; a rewrites() entry would be frozen into the build manifest.
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
