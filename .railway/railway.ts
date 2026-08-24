@@ -2,16 +2,19 @@ import { defineRailway, github, postgres, preserve, project, service } from "rai
 
 const REPO = "Carlos-hub/planejai-trilha";
 
-// Topology and variable wiring live here. Per-service build settings (builder,
-// healthcheck, restart policy) stay in backend/railway.json and
-// frontend/railway.json, colocated with the code they build, so the two files
-// never drift out of sync. If `railway config plan` ever proposes clearing those
-// settings, move them into the `build`/`deploy` fields here instead.
+// Single source of truth for the project: topology, build settings, and variable
+// wiring. Railway's older Config-as-Code (railway.json / railway.toml) is
+// deprecated and stops working on 2026-12-01, so nothing lives there.
+//
+// Both services build from a Dockerfile at the root of their own directory.
 export default defineRailway(() => {
   const db = postgres("db");
 
   const api = service("api", {
     source: github(REPO, { rootDirectory: "backend" }),
+    build: { builder: "DOCKERFILE", dockerfilePath: "Dockerfile" },
+    healthcheck: "/healthz",
+    deploy: { restartPolicyType: "ON_FAILURE", restartPolicyMaxRetries: 5 },
     env: {
       DATABASE_URL: db.env.DATABASE_URL,
       // Pinned so `web` can address the API on a known port over the private
@@ -30,6 +33,9 @@ export default defineRailway(() => {
 
   const web = service("web", {
     source: github(REPO, { rootDirectory: "frontend" }),
+    build: { builder: "DOCKERFILE", dockerfilePath: "Dockerfile" },
+    healthcheck: "/",
+    deploy: { restartPolicyType: "ON_FAILURE", restartPolicyMaxRetries: 5 },
     env: {
       // Railway's own reference syntax, resolved at deploy time. The SDK's
       // api.env.RAILWAY_PRIVATE_DOMAIN returns a reference object that cannot be
