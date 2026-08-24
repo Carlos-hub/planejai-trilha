@@ -1,7 +1,7 @@
 # PlanejAI + Trilha — Rebuild em Go + NextJS — Design
 
 **Data:** 2026-07-13
-**Contexto:** Hackathon 6FSDT (FIAP/Postech) — tema "Auxílio aos professores do ensino público". Reconstrução do MVP (antes Laravel/PHP) em Go (backend) + NextJS (frontend). Produto e regras de negócio inalterados; muda somente a stack. Substitui o design de 2026-06-29 (`2026-06-29-planejai-trilha-design.md`), que fica como referência histórica.
+**Contexto:** Hackathon (FIAP/Postech) — tema "Auxílio aos professores do ensino público". Reconstrução do MVP (antes Laravel/PHP) em Go (backend) + NextJS (frontend). Produto e regras de negócio inalterados; muda somente a stack. Substitui o design de 2026-06-29 (`2026-06-29-planejai-trilha-design.md`), que fica como referência histórica.
 
 ## Resumo Executivo
 

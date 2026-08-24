@@ -59,7 +59,7 @@ export default function LoginPage() {
         <div className="relative">
           <BrandMark className="size-10 text-sidebar-primary" />
           <h2 className="mt-5 max-w-sm font-[family-name:var(--font-display)] text-3xl font-semibold leading-tight text-sidebar-accent-foreground">
-            Planeje uma vez. Ensine o aluno inteiro.
+            Planeje uma vez. Ensine da melhor forma.
           </h2>
           <p className="mt-3 max-w-sm text-sm text-sidebar-foreground/70">
             Aulas alinhadas à BNCC que viram trilhas de estudo com quiz
@@ -72,7 +72,7 @@ export default function LoginPage() {
           </ul>
         </div>
         <p className="relative text-xs text-sidebar-foreground/50">
-          PlanejAI · Trilha — Hackathon 6FSDT
+          PlanejAI · Trilha — Hackathon
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 # PlanejAI + Trilha — Design
 
 **Data:** 2026-06-29
-**Contexto:** Hackathon 6FSDT (FIAP/Postech) — tema "Auxílio aos professores do ensino público". Entrega: vídeo pitch (8min), vídeo MVP (8min), relatório. Critérios: MVP 30%, Problema/Impacto 20%, Inovação 20%, Apresentação 20%, Documentação 10%.
+**Contexto:** Hackathon (FIAP/Postech) — tema "Auxílio aos professores do ensino público". Entrega: vídeo pitch (8min), vídeo MVP (8min), relatório. Critérios: MVP 30%, Problema/Impacto 20%, Inovação 20%, Apresentação 20%, Documentação 10%.
 
 ## Resumo Executivo
 
