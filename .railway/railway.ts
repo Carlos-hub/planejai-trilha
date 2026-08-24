@@ -14,7 +14,10 @@ export default defineRailway(() => {
     source: github(REPO, { rootDirectory: "backend" }),
     build: { builder: "DOCKERFILE", dockerfilePath: "Dockerfile" },
     healthcheck: "/healthz",
-    deploy: { restartPolicyType: "ON_FAILURE", restartPolicyMaxRetries: 5 },
+    // restartPolicyType is intentionally left out: ON_FAILURE is Railway's
+    // default, and setting it explicitly reads back as null, so every plan
+    // would show a change that never converges.
+    deploy: { restartPolicyMaxRetries: 5 },
     env: {
       DATABASE_URL: db.env.DATABASE_URL,
       // Pinned so `web` can address the API on a known port over the private
@@ -35,7 +38,10 @@ export default defineRailway(() => {
     source: github(REPO, { rootDirectory: "frontend" }),
     build: { builder: "DOCKERFILE", dockerfilePath: "Dockerfile" },
     healthcheck: "/",
-    deploy: { restartPolicyType: "ON_FAILURE", restartPolicyMaxRetries: 5 },
+    // restartPolicyType is intentionally left out: ON_FAILURE is Railway's
+    // default, and setting it explicitly reads back as null, so every plan
+    // would show a change that never converges.
+    deploy: { restartPolicyMaxRetries: 5 },
     env: {
       // Railway's own reference syntax, resolved at deploy time. The SDK's
       // api.env.RAILWAY_PRIVATE_DOMAIN returns a reference object that cannot be
