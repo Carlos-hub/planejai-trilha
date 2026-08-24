@@ -2,7 +2,7 @@
 
 Planejador de aulas alinhado à **BNCC** para professores, que gera automaticamente uma **trilha de estudo do aluno** (acesso por código, quiz autocorrigido e gamificação) a partir de uma única geração via IA.
 
-> MVP do Hackathon FIAP — Pós-Tech (6FSDT).
+> MVP do Hackathon FIAP — Pós-Tech.
 
 ---
 

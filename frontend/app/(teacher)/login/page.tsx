@@ -72,7 +72,7 @@ export default function LoginPage() {
           </ul>
         </div>
         <p className="relative text-xs text-sidebar-foreground/50">
-          PlanejAI · Trilha — Hackathon 6FSDT
+          PlanejAI · Trilha — Hackathon
         </p>
       </div>
 
