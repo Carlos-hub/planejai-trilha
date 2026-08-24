@@ -1,0 +1,9 @@
+{
+  "name": "planejai-iac",
+  "private": true,
+  "type": "module",
+  "description": "Root package exists only so the Railway CLI can resolve the `railway` package when it evaluates .railway/railway.ts. The app itself lives in backend/ and frontend/.",
+  "devDependencies": {
+    "railway": "^3.11.0"
+  }
+}
