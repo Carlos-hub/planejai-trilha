@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export interface QuizRunnerProps {
   questoes: PublicQuestao[];
@@ -47,7 +46,7 @@ export function QuizRunner({ questoes, attemptId, code, publicaUrl }: QuizRunner
     const whatsappHref = `https://wa.me/?text=${encodeURIComponent(
       `Concluí a trilha e fiz ${result.pontos} pontos! ${shareUrl}`
     )}`;
-    const pdfHref = `${API_BASE}/api/t/${code}/export.pdf`;
+    const pdfHref = `/api/t/${code}/export.pdf`;
 
     return (
       <Card>

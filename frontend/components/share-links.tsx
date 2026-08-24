@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export function ShareLinks({ codigo, publicaUrl }: { codigo: string; publicaUrl: string }) {
   const [copied, setCopied] = useState(false);
@@ -22,7 +21,7 @@ export function ShareLinks({ codigo, publicaUrl }: { codigo: string; publicaUrl:
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(
     `Acesse a trilha de estudos: ${publicaUrl}`
   )}`;
-  const pdfHref = `${API_BASE}/api/t/${codigo}/export.pdf`;
+  const pdfHref = `/api/t/${codigo}/export.pdf`;
 
   return (
     <Card>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -96,11 +97,20 @@ func NewRouter(d Deps) http.Handler {
 	return r
 }
 
-// corsMiddleware allows the frontend origin (http://localhost:3000) to make
-// credentialed requests (cookies) to the API.
+// corsMiddleware allows a single cross-origin frontend to make credentialed
+// requests. It is opt-in via CORS_ORIGIN: the deployed setup proxies /api
+// through the Next.js server, so browser and API share an origin and no CORS
+// headers are needed. Leaving it unset keeps the API from advertising itself
+// to any browser origin.
 func corsMiddleware(next http.Handler) http.Handler {
+	origin := os.Getenv("CORS_ORIGIN")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		if origin == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.Header().Set("Vary", "Origin")
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")

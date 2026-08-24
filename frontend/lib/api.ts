@@ -9,7 +9,9 @@ import type {
   LessonSummary,
 } from "./types";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+// Relative: requests hit the Next.js origin and are rewritten to the backend
+// (see next.config.ts), so the session cookie stays same-site.
+const BASE = "";
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
